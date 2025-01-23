@@ -2,7 +2,7 @@ import os
 import re
 
 from ..molecule import Molecule as Base
-from psi4.core import Molecule as Implementation
+from psi4.core import Molecule as Native
 
 
 class Molecule(Base):
@@ -19,7 +19,7 @@ class Molecule(Base):
         base_name = os.path.basename(path)
         self._name, _ = os.path.splitext(base_name)
 
-        self._molecule = Implementation.from_string(xyz, dtype="xyz+")
+        self._molecule = Native.from_string(xyz, dtype="xyz+")
 
     @property
     def name(self) -> str:
@@ -32,3 +32,11 @@ class Molecule(Base):
     @property
     def multiplicity(self) -> int:
         return self._molecule.multiplicity()
+
+    @property
+    def atoms(self) -> int:
+        return self._molecule.natom()
+
+    @property
+    def native(self) -> Native:
+        return self._molecule

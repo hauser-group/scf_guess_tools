@@ -2,7 +2,7 @@ import os
 import re
 
 from ..molecule import Molecule as Base
-from pyscf.gto import M
+from pyscf.gto import M, Mole as Native
 
 
 class Molecule(Base):
@@ -29,3 +29,11 @@ class Molecule(Base):
     @property
     def multiplicity(self) -> int:
         return self._molecule.multiplicity
+
+    @property
+    def atoms(self) -> int:
+        return self._molecule.natm
+
+    @property
+    def native(self) -> Native:
+        return self._molecule

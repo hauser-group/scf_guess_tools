@@ -20,3 +20,13 @@ class Molecule(ABC):
     @property
     def singlet(self) -> bool:
         return self.multiplicity == 1
+
+    @property
+    @abstractmethod
+    def atoms(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def native(self):
+        pass
