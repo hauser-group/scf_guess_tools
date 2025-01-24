@@ -24,7 +24,6 @@ requirements:
 
 test:
   requires:
-    - conda-build
     - pytest
   source_files:
     - tests
