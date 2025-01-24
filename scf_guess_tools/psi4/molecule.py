@@ -1,41 +1,43 @@
 import os
 import re
 
-from psi4.core import Molecule
+from ..molecule import Molecule as Base
+from psi4.core import Molecule as Native
 
 
-def load(path: str, disable_symmetry: bool = False) -> Molecule:
-    with open(path, "r") as file:
-        lines = file.readlines()
+class Molecule(Base):
+    def __init__(self, path: str):
+        with open(path, "r") as file:
+            lines = file.readlines()
 
-    q = re.search(r"charge\s+(-?\d+)", lines[1]).group(1)
-    s = re.search(r"multiplicity\s+(\d+)", lines[1]).group(1)
+        q = re.search(r"charge\s+(-?\d+)", lines[1]).group(1)
+        m = re.search(r"multiplicity\s+(\d+)", lines[1]).group(1)
 
-    lines[1] = f"{q} {s}\n"
-    xyz = "".join(lines)
+        lines[1] = f"{q} {m}\n"
+        xyz = "".join(lines)
 
-    base_name = os.path.basename(path)
-    file_name, _ = os.path.splitext(base_name)
+        base_name = os.path.basename(path)
+        self._name, _ = os.path.splitext(base_name)
 
-    molecule = Molecule.from_string(xyz, name=file_name, dtype="xyz+")
+        self._molecule = Native.from_string(xyz, name=self._name,
+                                            dtype="xyz+")
 
-    if disable_symmetry:
-        molecule.reset_point_group("C1")
+    @property
+    def name(self) -> str:
+        return self._name
 
-    return molecule
+    @property
+    def charge(self) -> int:
+        return self._molecule.molecular_charge()
 
+    @property
+    def multiplicity(self) -> int:
+        return self._molecule.multiplicity()
 
-def charged(molecule: Molecule) -> bool:
-    return molecule.molecular_charge() != 0
+    @property
+    def atoms(self) -> int:
+        return self._molecule.natom()
 
-
-def non_charged(molecule: Molecule) -> bool:
-    return not charged(molecule)
-
-
-def singlet(molecule: Molecule) -> bool:
-    return molecule.multiplicity() == 1
-
-
-def non_singlet(molecule: Molecule) -> bool:
-    return not singlet(molecule)
+    @property
+    def native(self) -> Native:
+        return self._molecule
