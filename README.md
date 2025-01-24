@@ -1,5 +1,7 @@
 # SCF Guess Tools
 
+[![Conda](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yml/badge.svg)](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yml)
+
 ## About
 
 This is a Python package containing a collection of tools to work with initial
