@@ -1,6 +1,6 @@
 # SCF Guess Tools
 
-[![Conda](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yml/badge.svg)](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yml)
+[![Conda](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yaml/badge.svg)](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yaml)
 
 ## About
 
