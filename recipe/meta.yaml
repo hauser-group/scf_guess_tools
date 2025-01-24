@@ -20,7 +20,15 @@ requirements:
     - python>=3.8
     - psi4>=1.9.1
     - pyscf>=2.8.0
-    - numpy>=2.2.2
+    - numpy
+
+test:
+  requires:
+    - pytest
+  source_files:
+    - tests
+  commands:
+    - pytest tests
 
 about:
   home: https://github.com/hauser-group/scf_guess_tools
