@@ -6,7 +6,7 @@ from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
 from .molecule import Molecule
 from psi4.core import Matrix, Wavefunction as Native
-from typing import Tuple, Self
+from typing import Self
 
 
 def _hartree_fock(molecule: Molecule,
@@ -83,42 +83,9 @@ def _hartree_fock_iterations(stdout_file: str) -> int:
     return len(iterations)
 
 
-def calculate(molecule: Molecule,
-              theory: str,
-              guess: str | Native,
-              basis: str)\
-        -> Tuple[Native, int, bool]:
-    assert theory == "HF"
-
-    if isinstance(guess, Native):
-        # See https://forum.psicode.org/t/custom-guess-for-hartree-fock/2026/6
-        scratch_dir = psi4.core.IOManager.shared_object().get_default_path()
-        guess.to_file(filename=f"{scratch_dir}/"
-                               f"stdout.{molecule.name}.{os.getpid()}.180.npy")
-
-    try:
-        with clean_context() as stdout_file:
-            second_order = False
-            wfn = _hartree_fock(molecule,
-                                guess if isinstance(guess, str) else "READ",
-                                basis,
-                                second_order)
-            iterations = _hartree_fock_iterations(stdout_file)
-    except psi4.ConvergenceError:
-        with clean_context() as stdout_file:
-            second_order = True
-            wfn = _hartree_fock(molecule,
-                                guess if isinstance(guess, str) else "READ",
-                                basis,
-                                second_order)
-            iterations = _hartree_fock_iterations(stdout_file)
-
-    return wfn, iterations, second_order
-
-
 class Wavefunction(Base):
-    def __init__(self, native: Native, molecule: Molecule, origin: str):
-        super().__init__(molecule, origin)
+    def __init__(self, native: Native, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._native = native
 
     @classmethod
@@ -141,6 +108,32 @@ class Wavefunction(Base):
             start_wfn.guess()
 
             return Wavefunction(start_wfn, molecule, method)
+
+    @classmethod
+    def calculate(cls, molecule: Molecule, basis: str,
+                  guess: str | Self) -> Self:
+        guess_str = guess
+
+        if not isinstance(guess, str):
+            # https://forum.psicode.org/t/custom-guess-for-hartree-fock/2026/6
+            scratch_dir = psi4.core.IOManager.shared_object().get_default_path()
+            guess_file = f"{scratch_dir}/"\
+                         f"stdout.{molecule.name}.{os.getpid()}.180.npy"
+            guess.native.to_file(filename=guess_file)
+            guess_str = "READ"
+
+        try:
+            with clean_context() as stdout_file:
+                retry = False
+                wfn = _hartree_fock(molecule, guess_str, basis, retry)
+                iterations = _hartree_fock_iterations(stdout_file)
+        except psi4.ConvergenceError:
+            with clean_context() as stdout_file:
+                retry = True
+                wfn = _hartree_fock(molecule, guess_str, basis, retry)
+                iterations = _hartree_fock_iterations(stdout_file)
+
+        return Wavefunction(wfn, molecule, guess, iterations, retry)
 
     @property
     def native(self) -> Native:
