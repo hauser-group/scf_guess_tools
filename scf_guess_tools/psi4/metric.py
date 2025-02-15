@@ -1,16 +1,19 @@
 import numpy as np
 import psi4
 
-from .molecule import singlet
-from psi4.core import Matrix, Wavefunction
+from .wavefunction import Wavefunction
+from psi4.core import Matrix
 
 
-def f_score(guess: Wavefunction, reference: Wavefunction) -> float:
-    Da_guess, Db_guess = guess.Da_subset("AO").np, guess.Db_subset("AO").np
-    Da_ref, Db_ref = reference.Db_subset("AO").np, reference.Db_subset("AO").np
+def f_score(initial: Wavefunction, final: Wavefunction) -> float:
+    Da_guess, Db_guess = (
+        initial.native.Da_subset("AO").np,
+        initial.native.Db_subset("AO").np,
+    )
+    Da_ref, Db_ref = final.native.Db_subset("AO").np, final.native.Db_subset("AO").np
 
     S = Matrix(*Da_ref.shape)
-    S.remove_symmetry(reference.S(), reference.aotoso().transpose())
+    S.remove_symmetry(final.native.S(), final.native.aotoso().transpose())
 
     Q = lambda P_guess, P_ref: np.trace(P_guess @ S @ P_ref @ S)
     N = lambda P_ref: np.trace(P_ref @ S)
@@ -21,15 +24,21 @@ def f_score(guess: Wavefunction, reference: Wavefunction) -> float:
     return numerator / denominator
 
 
-def diis_error(guess: Wavefunction, reference: Wavefunction) -> float:
+def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
     # TODO this is buggy
 
-    Da_guess, Db_guess = guess.Da_subset("AO").np, guess.Db_subset("AO").np
-    Fa_guess, Fb_guess = guess.Fa_subset("AO").np, guess.Fb_subset("AO").np
-    Da_ref, Db_ref = reference.Da_subset("AO").np, reference.Db_subset("AO").np
+    Da_guess, Db_guess = (
+        initial.native.Da_subset("AO").np,
+        initial.native.Db_subset("AO").np,
+    )
+    Fa_guess, Fb_guess = (
+        initial.native.Fa_subset("AO").np,
+        initial.native.Fb_subset("AO").np,
+    )
+    Da_ref, Db_ref = final.native.Da_subset("AO").np, final.native.Db_subset("AO").np
 
     S = Matrix(*Da_ref.shape)
-    S.remove_symmetry(reference.S(), reference.aotoso().transpose())
+    S.remove_symmetry(final.native.S(), final.native.aotoso().transpose())
 
     Ea = Fa_guess @ Da_guess @ S - S @ Da_guess @ Fa_guess
     Eb = Fb_guess @ Db_guess @ S - S @ Db_guess @ Fb_guess
@@ -37,7 +46,7 @@ def diis_error(guess: Wavefunction, reference: Wavefunction) -> float:
     return np.trace(Ea @ Ea) + np.trace(Eb @ Eb)
 
 
-def energy_error(guess: Wavefunction, reference: Wavefunction) -> float:
+def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
     # TODO this is buggy
     # TODO this needs generalization to other bases
     # TODO check theory level
@@ -54,12 +63,12 @@ def energy_error(guess: Wavefunction, reference: Wavefunction) -> float:
                     "SCF_TYPE": "PK",
                     "MAXITER": 0,
                     "FAIL_ON_MAXITER": False,
-                    "REFERENCE": "RHF" if singlet(guess.molecule()) else "UHF",
+                    "REFERENCE": "RHF" if initial.molecule.singlet else "UHF",
                 }
             )
 
-            E_guess = psi4.energy("HF", molecule=guess.molecule())
-            E_ref = reference.energy()
+            E_guess = psi4.energy("HF", molecule=initial.molecule.native)
+            E_ref = final.native.energy()
         finally:
             psi4.core.clean_options()
             psi4.core.clean()
