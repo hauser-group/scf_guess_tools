@@ -30,3 +30,7 @@ class Engine(Base):
                 return energy_error(initial, final)
             case _:
                 raise NotImplementedError(f"{metric} not implemented for Psi4")
+
+    @property
+    def guessing_schemes(self) -> list[str]:
+        return ["CORE", "SAD", "SADNO", "GWH", "HUCKEL", "MODHUCKEL", "SAP", "SAPGAU"]

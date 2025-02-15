@@ -24,3 +24,8 @@ class Engine(ABC):
         self, initial: Wavefunction, final: Wavefunction, metric: Metric
     ) -> float:
         pass
+
+    @property
+    @abstractmethod
+    def guessing_schemes(self) -> list[str]:
+        pass

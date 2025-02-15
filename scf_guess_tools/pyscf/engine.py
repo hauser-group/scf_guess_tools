@@ -30,3 +30,7 @@ class Engine(Base):
                 return energy_error(initial, final)
             case _:
                 raise NotImplementedError(f"{metric} not implemented for PySCF")
+
+    @property
+    def guessing_schemes(self) -> list[str]:
+        return ["minao", "1e", "atom", "huckel", "vsap", "chk"]
