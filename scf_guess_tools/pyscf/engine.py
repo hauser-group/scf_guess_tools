@@ -15,7 +15,7 @@ class Engine(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
     ) -> Wavefunction:
         return Wavefunction.calculate(molecule, basis, guess)
 
@@ -33,4 +33,4 @@ class Engine(Base):
 
     @property
     def guessing_schemes(self) -> list[str]:
-        return ["minao", "1e", "atom", "huckel", "vsap", "chk"]
+        return ["minao", "1e", "atom", "huckel", "vsap"]

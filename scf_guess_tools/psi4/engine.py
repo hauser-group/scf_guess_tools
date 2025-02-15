@@ -15,7 +15,7 @@ class Engine(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
     ) -> Wavefunction:
         return Wavefunction.calculate(molecule, basis, guess)
 

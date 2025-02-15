@@ -15,7 +15,7 @@ class Engine(ABC):
 
     @abstractmethod
     def calculate(
-        self, molecule: Molecule, basis: str, guess: str | Wavefunction
+        self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
     ) -> Wavefunction:
         pass
 
