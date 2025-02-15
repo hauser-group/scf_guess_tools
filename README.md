@@ -12,6 +12,21 @@ method
 - Making initial guesses using classical guessing schemes
 - Scoring arbitrary initial guesses with respect to impact on convergence
 
+## How to Use
+
+```python
+from scf_guess_tools import Psi4Engine, PySCFEngine, Metric
+
+engine = Psi4Engine() # you can replace this on-the-fly
+molecule = engine.load("ch3.xyz")
+final = engine.calculate(molecule, "pcseg-0")
+
+for method in engine.guessing_schemes:
+    initial = engine.guess(molecule, "pcseg-0", method)
+    score = engine.score(initial, final, Metric.DIIS_ERROR)
+    print(f"{method} scored {score}")
+```
+
 ## Installation
 
 This package is distributed via Conda. Currently, you need to manually build and
