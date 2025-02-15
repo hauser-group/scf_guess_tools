@@ -4,15 +4,21 @@
 
 ## About
 
-This is a Python package containing a collection of tools to work with initial
-guesses as required by various SCF methods. It aims at abstracting common
-functionality while supporting both `Psi4` and `PySCF` as backends.
+This is a Python package providing a uniform, high-level interface abstracting
+common functionality from the [Psi4](https://psicode.org) and
+[PySCF](https://pyscf.org) packages for:
+- Calculating the electronic wavefunction of molecules using the Hartree-Fock 
+method
+- Making initial guesses using classical guessing schemes
+- Scoring arbitrary initial guesses with respect to impact on convergence
 
 ## Installation
 
-Currently you need to manually install this package as follows.
+This package is distributed via Conda. Currently, you need to manually build and
+install this package as follows.
 
 - Activate the conda environment to which you want to install
+- Run `conda install conda-build`
 - Run `conda build --channel conda-forge --channel pyscf recipe`
 - Run `conda install --channel conda-forge --channel pyscf --use-local
 scf_guess_tools`
@@ -24,4 +30,4 @@ target conda environment to ensure all dependencies are available. Then:
 - Run `conda remove --force scf_guess_tools`
 - Run `conda develop .`
 
-To exit development mode, invoke `conda develop --uninstall .`.
+Invoke `conda develop --uninstall .` to exit development mode.
