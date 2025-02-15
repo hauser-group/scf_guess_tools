@@ -27,7 +27,11 @@ class Wavefunction(Base):
         return Wavefunction(guess, molecule, method)
 
     @classmethod
-    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
+    def calculate(
+        cls, molecule: Molecule, basis: str, guess: str | Self = None
+    ) -> Self:
+        guess = "minao" if guess is None else guess
+
         molecule.native.basis = basis
         molecule.native.build()
 

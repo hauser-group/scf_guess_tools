@@ -109,7 +109,10 @@ class Wavefunction(Base):
             return Wavefunction(start_wfn, molecule, method)
 
     @classmethod
-    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
+    def calculate(
+        cls, molecule: Molecule, basis: str, guess: str | Self = None
+    ) -> Self:
+        guess = "AUTO" if guess is None else guess
         guess_str = guess
 
         if not isinstance(guess, str):

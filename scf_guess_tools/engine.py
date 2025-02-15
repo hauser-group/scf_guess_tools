@@ -1,3 +1,4 @@
+from .metric import Metric
 from .molecule import Molecule
 from .wavefunction import Wavefunction
 from abc import ABC, abstractmethod
@@ -14,6 +15,17 @@ class Engine(ABC):
 
     @abstractmethod
     def calculate(
-        self, molecule: Molecule, basis: str, guess: str | Wavefunction
+        self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
     ) -> Wavefunction:
+        pass
+
+    @abstractmethod
+    def score(
+        self, initial: Wavefunction, final: Wavefunction, metric: Metric
+    ) -> float:
+        pass
+
+    @property
+    @abstractmethod
+    def guessing_schemes(self) -> list[str]:
         pass

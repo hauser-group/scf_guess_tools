@@ -1,4 +1,6 @@
 from ..engine import Engine as Base
+from ..metric import Metric
+from .metric import f_score, diis_error, energy_error
 from .molecule import Molecule
 from .wavefunction import Wavefunction
 
@@ -13,6 +15,22 @@ class Engine(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
     ) -> Wavefunction:
         return Wavefunction.calculate(molecule, basis, guess)
+
+    @classmethod
+    def score(cls, initial: Wavefunction, final: Wavefunction, metric: Metric) -> float:
+        match metric:
+            case Metric.F_SCORE:
+                return f_score(initial, final)
+            case Metric.DIIS_ERROR:
+                return diis_error(initial, final)
+            case Metric.ENERGY_ERROR:
+                return energy_error(initial, final)
+            case _:
+                raise NotImplementedError(f"{metric} not implemented for Psi4")
+
+    @property
+    def guessing_schemes(self) -> list[str]:
+        return ["CORE", "SAD", "SADNO", "GWH", "HUCKEL", "MODHUCKEL", "SAP", "SAPGAU"]
