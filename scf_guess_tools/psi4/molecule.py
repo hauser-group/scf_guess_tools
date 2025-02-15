@@ -19,8 +19,7 @@ class Molecule(Base):
         base_name = os.path.basename(path)
         self._name, _ = os.path.splitext(base_name)
 
-        self._molecule = Native.from_string(xyz, name=self._name,
-                                            dtype="xyz+")
+        self._molecule = Native.from_string(xyz, name=self._name, dtype="xyz+")
 
     @property
     def name(self) -> str:

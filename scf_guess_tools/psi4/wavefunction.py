@@ -9,34 +9,36 @@ from psi4.core import Matrix, Wavefunction as Native
 from typing import Self
 
 
-def _hartree_fock(molecule: Molecule,
-                  guess: str,
-                  basis: str,
-                  second_order: bool = False) \
-        -> Native:
+def _hartree_fock(
+    molecule: Molecule, guess: str, basis: str, second_order: bool = False
+) -> Native:
     stability_analysis = "NONE"
     if not molecule.singlet:
         stability_analysis = "FOLLOW"
     elif molecule.atoms <= 30:
         stability_analysis = "CHECK"
 
-    psi4.set_options({
-        "BASIS": basis,
-        "REFERENCE": "RHF" if molecule.singlet else "UHF",
-        "GUESS": guess,
-        # Disable density fitting for highest possible accuracy and
-        # because stability analysis is not available for density fitted
-        # RHF wave functions:
-        "SCF_TYPE": "PK",
-        "STABILITY_ANALYSIS": stability_analysis
-    })
+    psi4.set_options(
+        {
+            "BASIS": basis,
+            "REFERENCE": "RHF" if molecule.singlet else "UHF",
+            "GUESS": guess,
+            # Disable density fitting for highest possible accuracy and
+            # because stability analysis is not available for density fitted
+            # RHF wave functions:
+            "SCF_TYPE": "PK",
+            "STABILITY_ANALYSIS": stability_analysis,
+        }
+    )
 
     if second_order:
-        psi4.set_options({
-            "SOSCF": True,
-            "SOSCF_START_CONVERGENCE": 1.0e-2,
-            "SOSCF_MAX_ITER": 40,
-        })
+        psi4.set_options(
+            {
+                "SOSCF": True,
+                "SOSCF_START_CONVERGENCE": 1.0e-2,
+                "SOSCF_MAX_ITER": 40,
+            }
+        )
 
     _, wfn = psi4.energy("HF", molecule=molecule.native, return_wfn=True)
     return wfn
@@ -91,10 +93,7 @@ class Wavefunction(Base):
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, method: str) -> Self:
         with clean_context():
-            psi4.set_options({
-                "BASIS": basis,
-                "GUESS": method
-            })
+            psi4.set_options({"BASIS": basis, "GUESS": method})
 
             basis = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis)
@@ -110,15 +109,15 @@ class Wavefunction(Base):
             return Wavefunction(start_wfn, molecule, method)
 
     @classmethod
-    def calculate(cls, molecule: Molecule, basis: str,
-                  guess: str | Self) -> Self:
+    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
         guess_str = guess
 
         if not isinstance(guess, str):
             # https://forum.psicode.org/t/custom-guess-for-hartree-fock/2026/6
             scratch_dir = psi4.core.IOManager.shared_object().get_default_path()
-            guess_file = f"{scratch_dir}/"\
-                         f"stdout.{molecule.name}.{os.getpid()}.180.npy"
+            guess_file = (
+                f"{scratch_dir}/" f"stdout.{molecule.name}.{os.getpid()}.180.npy"
+            )
             guess.native.to_file(filename=guess_file)
             guess_str = "READ"
 
