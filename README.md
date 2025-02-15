@@ -4,9 +4,9 @@
 
 ## About
 
-This is a Python package providing a uniform, high-level interface abstracting
-common functionality from the [Psi4](https://psicode.org) and
-[PySCF](https://pyscf.org) packages for:
+This is a Python package ([How to Contribute](#how-to-contribute)) providing a
+uniform, high-level interface abstracting  common functionality from the
+[Psi4](https://psicode.org) and [PySCF](https://pyscf.org) packages for:
 - Calculating the electronic wavefunction of molecules using the Hartree-Fock 
 method
 - Making initial guesses using classical guessing schemes
@@ -23,11 +23,24 @@ install this package as follows.
 - Run `conda install --channel conda-forge --channel pyscf --use-local
 scf_guess_tools`
 
-## Development
+In order to see live changes to the package immediately you need to install this
+package in editable mode. After a regular installation, which is necessary to
+ensure all dependencies are installed in the target Conda environment, please:
 
-To install the package in editable mode, first do a regular installation to the
-target conda environment to ensure all dependencies are available. Then:
 - Run `conda remove --force scf_guess_tools`
 - Run `conda develop .`
 
 Invoke `conda develop --uninstall .` to exit development mode.
+
+## How to Contribute
+
+Please create an [issue](https://github.com/hauser-group/scf_guess_tools/issues)
+as well as a `feature/fancy-new-feature` branch linked to that issue. Feature
+branches are merged into the `development` branch via
+[pull requests](https://github.com/hauser-group/scf_guess_tools/pulls).
+
+We're using pre-commit hooks and the [Black](https://github.com/psf/black)
+formatter to enforce a uniform coding style. Before committing, please:
+- Run `conda install pre-commit`
+- Run `conda install black`
+- Run `pre-commit install`

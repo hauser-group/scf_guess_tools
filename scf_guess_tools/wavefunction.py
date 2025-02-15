@@ -4,8 +4,13 @@ from typing import Self
 
 
 class Wavefunction(ABC):
-    def __init__(self, molecule: Molecule, initial: str | Self = None,
-                 iterations: int = None, retried: bool = None):
+    def __init__(
+        self,
+        molecule: Molecule,
+        initial: str | Self = None,
+        iterations: int = None,
+        retried: bool = None,
+    ):
         self._molecule = molecule
         self._initial = initial
         self._iterations = iterations
@@ -49,6 +54,5 @@ class Wavefunction(ABC):
 
     @classmethod
     @abstractmethod
-    def calculate(cls, molecule: Molecule, basis: str,
-                  guess: str | Self) -> Self:
+    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
         pass

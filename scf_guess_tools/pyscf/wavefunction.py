@@ -27,8 +27,7 @@ class Wavefunction(Base):
         return Wavefunction(guess, molecule, method)
 
     @classmethod
-    def calculate(cls, molecule: Molecule, basis: str,
-                  guess: str | Self) -> Self:
+    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
         molecule.native.basis = basis
         molecule.native.build()
 
@@ -52,8 +51,9 @@ class Wavefunction(Base):
                 calculation = calculation.run(dm)
                 mo, _, stable, _ = calculation.stability(return_status=True)
 
-        return Wavefunction(calculation.make_rdm1(), molecule, guess,
-                            calculation.cycles, retry)
+        return Wavefunction(
+            calculation.make_rdm1(), molecule, guess, calculation.cycles, retry
+        )
 
     @property
     def native(self) -> NDArray:

@@ -1,0 +1,15 @@
+*
+
+!.gitignore
+!LICENSE.md
+!README.md
+!pyproject.toml
+
+!recipe/
+!recipe/meta.yaml
+
+!scf_guess_tools/
+!scf_guess_tools/**/*.py
+
+!tests/
+!tests/**

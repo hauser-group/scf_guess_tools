@@ -9,11 +9,11 @@ class Engine(ABC):
         pass
 
     @abstractmethod
-    def guess(self, molecule: Molecule, basis: str,
-              method: str) -> Wavefunction:
+    def guess(self, molecule: Molecule, basis: str, method: str) -> Wavefunction:
         pass
 
     @abstractmethod
-    def calculate(self, molecule: Molecule, basis: str,
-                  guess: str | Wavefunction) -> Wavefunction:
+    def calculate(
+        self, molecule: Molecule, basis: str, guess: str | Wavefunction
+    ) -> Wavefunction:
         pass

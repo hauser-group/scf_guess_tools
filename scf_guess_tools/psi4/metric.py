@@ -48,15 +48,17 @@ def energy_error(guess: Wavefunction, reference: Wavefunction) -> float:
             psi4.core.clean()
             psi4.core.be_quiet()
 
-            psi4.set_options({
-                'BASIS': 'pcseg-0',
-                'SCF_TYPE': 'PK',
-                'MAXITER': 0,
-                'FAIL_ON_MAXITER': False,
-                "REFERENCE": "RHF" if singlet(guess.molecule()) else "UHF",
-            })
+            psi4.set_options(
+                {
+                    "BASIS": "pcseg-0",
+                    "SCF_TYPE": "PK",
+                    "MAXITER": 0,
+                    "FAIL_ON_MAXITER": False,
+                    "REFERENCE": "RHF" if singlet(guess.molecule()) else "UHF",
+                }
+            )
 
-            E_guess = psi4.energy('HF', molecule=guess.molecule())
+            E_guess = psi4.energy("HF", molecule=guess.molecule())
             E_ref = reference.energy()
         finally:
             psi4.core.clean_options()
