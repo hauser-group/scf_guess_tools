@@ -11,10 +11,17 @@ class Wavefunction(Base):
         super().__init__(*args, **kwargs)
         self._native = native
 
-        if super().molecule.singlet:
-            self._Da = self._Db = native / 2
-        else:
-            self._Da, self._Db = native
+    @property
+    def native(self) -> NDArray:
+        return self._native
+
+    @property
+    def Da(self) -> NDArray:
+        return self.native / 2 if self.molecule.singlet else self.native
+
+    @property
+    def Db(self) -> NDArray:
+        return self.Da
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, method: str) -> Self:
@@ -59,14 +66,17 @@ class Wavefunction(Base):
             calculation.make_rdm1(), molecule, guess, calculation.cycles, retry
         )
 
-    @property
-    def native(self) -> NDArray:
-        return self._native
+    def __getstate__(self):
+        return (self.molecule,
+                self.initial,
+                self.iterations,
+                self.retried,
+                self.native
+                )
 
-    @property
-    def Da(self) -> NDArray:
-        return self._Da
-
-    @property
-    def Db(self) -> NDArray:
-        return self._Db
+    def __setstate__(self, serialized):
+        self._molecule = serialized[0]
+        self._initial = serialized[1]
+        self._iterations = serialized[2]
+        self._retried = serialized[3]
+        self._native = serialized[4]

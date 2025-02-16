@@ -90,6 +90,18 @@ class Wavefunction(Base):
         super().__init__(*args, **kwargs)
         self._native = native
 
+    @property
+    def native(self) -> Native:
+        return self._native
+
+    @property
+    def Da(self) -> Matrix:
+        return self._native.Da_subset("AO")
+
+    @property
+    def Db(self) -> Matrix:
+        return self._native.Db_subset("AO")
+
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, method: str) -> Self:
         with clean_context():
@@ -137,14 +149,17 @@ class Wavefunction(Base):
 
         return Wavefunction(wfn, molecule, guess, iterations, retry)
 
-    @property
-    def native(self) -> Native:
-        return self._native
+    def __getstate__(self):
+        return (self.molecule,
+                self.initial.native.to_file() if isinstance(self.initial, Native) else self.initial,
+                self.iterations,
+                self.retried,
+                self.native.to_file()
+                )
 
-    @property
-    def Da(self) -> Matrix:
-        return self._native.Da_subset("AO")
-
-    @property
-    def Db(self) -> Matrix:
-        return self._native.Db_subset("AO")
+    def __setstate__(self, serialized):
+        self._molecule = serialized[0]
+        self._initial = serialized[1] if isinstance(serialized[1], str) else Native.from_file(serialized[1])
+        self._iterations = serialized[2]
+        self._retried = serialized[3]
+        self._native = Native.from_file(serialized[4])

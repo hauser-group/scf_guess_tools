@@ -6,21 +6,21 @@ from .wavefunction import Wavefunction
 
 
 class Engine(Base):
+    def __init__(self, cache: bool):
+        super().__init__("pyscf" if cache else None)
+
     def load(self, path: str) -> Molecule:
         return Molecule(path)
 
-    @classmethod
-    def guess(cls, molecule: Molecule, basis: str, method: str) -> Wavefunction:
+    def guess(self, molecule: Molecule, basis: str, method: str) -> Wavefunction:
         return Wavefunction.guess(molecule, basis, method)
 
-    @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
+        self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
     ) -> Wavefunction:
         return Wavefunction.calculate(molecule, basis, guess)
 
-    @classmethod
-    def score(cls, initial: Wavefunction, final: Wavefunction, metric: Metric) -> float:
+    def score(self, initial: Wavefunction, final: Wavefunction, metric: Metric) -> float:
         match metric:
             case Metric.F_SCORE:
                 return f_score(initial, final)
