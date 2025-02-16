@@ -17,26 +17,32 @@ class Molecule(Base):
         xyz = "".join(lines)
 
         base_name = os.path.basename(path)
-        self._name, _ = os.path.splitext(base_name)
+        name, _ = os.path.splitext(base_name)
 
-        self._molecule = Native.from_string(xyz, name=self._name, dtype="xyz+")
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def charge(self) -> int:
-        return self._molecule.molecular_charge()
-
-    @property
-    def multiplicity(self) -> int:
-        return self._molecule.multiplicity()
-
-    @property
-    def atoms(self) -> int:
-        return self._molecule.natom()
+        self._native = Native.from_string(xyz, name=name, dtype="xyz+")
 
     @property
     def native(self) -> Native:
-        return self._molecule
+        return self._native
+
+    @property
+    def name(self) -> str:
+        return self._native.name()
+
+    @property
+    def charge(self) -> int:
+        return self._native.molecular_charge()
+
+    @property
+    def multiplicity(self) -> int:
+        return self._native.multiplicity()
+
+    @property
+    def atoms(self) -> int:
+        return self._native.natom()
+
+    def __getstate__(self):
+        return self.native.to_string(dtype="psi4"), self.name
+
+    def __setstate__(self, serialized):
+        self._native = Native.from_string(serialized[0], name=serialized[1], dtype="psi4")
