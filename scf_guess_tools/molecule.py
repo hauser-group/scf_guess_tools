@@ -4,6 +4,11 @@ from abc import ABC, abstractmethod
 class Molecule(ABC):
     @property
     @abstractmethod
+    def native(self):
+        pass
+
+    @property
+    @abstractmethod
     def name(self) -> str:
         pass
 
@@ -22,11 +27,18 @@ class Molecule(ABC):
         return self.multiplicity == 1
 
     @property
+    def triplet(self) -> bool:
+        return self.multiplicity == 3
+
+    @property
     @abstractmethod
     def atoms(self) -> int:
         pass
 
-    @property
     @abstractmethod
-    def native(self):
+    def __getstate__(self):
+        pass
+
+    @abstractmethod
+    def __setstate__(self, serialized):
         pass

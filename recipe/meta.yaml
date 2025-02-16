@@ -21,6 +21,7 @@ requirements:
     - psi4>=1.9.1
     - pyscf>=2.8.0
     - numpy
+    - joblib
 
 test:
   requires:

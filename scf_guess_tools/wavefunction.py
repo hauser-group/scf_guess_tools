@@ -17,6 +17,11 @@ class Wavefunction(ABC):
         self._retried = retried
 
     @property
+    @abstractmethod
+    def native(self):
+        pass
+
+    @property
     def molecule(self) -> Molecule:
         return self._molecule
 
@@ -31,11 +36,6 @@ class Wavefunction(ABC):
     @property
     def retried(self) -> bool:
         return self._retried
-
-    @property
-    @abstractmethod
-    def native(self):
-        pass
 
     @property
     @abstractmethod
@@ -55,4 +55,12 @@ class Wavefunction(ABC):
     @classmethod
     @abstractmethod
     def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
+        pass
+
+    @abstractmethod
+    def __getstate__(self):
+        pass
+
+    @abstractmethod
+    def __setstate__(self, serialized):
         pass
