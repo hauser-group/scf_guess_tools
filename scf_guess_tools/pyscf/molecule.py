@@ -39,7 +39,8 @@ class Molecule(Base):
         return self._native.natm
 
     def __getstate__(self):
-        return self.name, self.native
+        return self.name, self.native.tostring(format="xyz")
 
     def __setstate__(self, serialized):
-        self._name, self._native = serialized
+        self._name = serialized[0]
+        self._native = Native().fromstring(serialized[1], format="xyz")
