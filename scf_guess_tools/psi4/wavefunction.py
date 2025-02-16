@@ -150,16 +150,25 @@ class Wavefunction(Base):
         return Wavefunction(wfn, molecule, guess, iterations, retry)
 
     def __getstate__(self):
-        return (self.molecule,
-                self.initial.native.to_file() if isinstance(self.initial, Native) else self.initial,
-                self.iterations,
-                self.retried,
-                self.native.to_file()
-                )
+        return (
+            self.molecule,
+            (
+                self.initial.native.to_file()
+                if isinstance(self.initial, Native)
+                else self.initial
+            ),
+            self.iterations,
+            self.retried,
+            self.native.to_file(),
+        )
 
     def __setstate__(self, serialized):
         self._molecule = serialized[0]
-        self._initial = serialized[1] if isinstance(serialized[1], str) else Native.from_file(serialized[1])
+        self._initial = (
+            serialized[1]
+            if isinstance(serialized[1], str)
+            else Native.from_file(serialized[1])
+        )
         self._iterations = serialized[2]
         self._retried = serialized[3]
         self._native = Native.from_file(serialized[4])

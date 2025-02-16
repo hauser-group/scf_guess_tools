@@ -45,4 +45,6 @@ class Molecule(Base):
         return self.native.to_string(dtype="psi4"), self.name
 
     def __setstate__(self, serialized):
-        self._native = Native.from_string(serialized[0], name=serialized[1], dtype="psi4")
+        self._native = Native.from_string(
+            serialized[0], name=serialized[1], dtype="psi4"
+        )

@@ -67,12 +67,7 @@ class Wavefunction(Base):
         )
 
     def __getstate__(self):
-        return (self.molecule,
-                self.initial,
-                self.iterations,
-                self.retried,
-                self.native
-                )
+        return (self.molecule, self.initial, self.iterations, self.retried, self.native)
 
     def __setstate__(self, serialized):
         self._molecule = serialized[0]
