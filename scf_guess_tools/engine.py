@@ -7,7 +7,7 @@ import os
 
 
 class Engine(ABC):
-    def __init__(self, cache: str):
+    def __init__(self, cache: str, verbose: int):
         if cache is None:
             return
 
@@ -16,7 +16,7 @@ class Engine(ABC):
         if base is None:
             raise RuntimeError("SGT_CACHE environment variable not set")
 
-        self._memory = Memory(base, verbose=0)
+        self._memory = Memory(base, verbose=verbose)
 
         self.guess = self._memory.cache(self.guess, ignore=["self"])
         self.calculate = self._memory.cache(self.calculate, ignore=["self"])

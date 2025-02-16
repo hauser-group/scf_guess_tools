@@ -6,8 +6,8 @@ from .wavefunction import Wavefunction
 
 
 class Engine(Base):
-    def __init__(self, cache: bool):
-        super().__init__("pyscf" if cache else None)
+    def __init__(self, cache: bool = True, verbose: int = 0):
+        super().__init__("pyscf" if cache else None, verbose)
 
     def load(self, path: str) -> Molecule:
         return Molecule(path)
@@ -20,7 +20,9 @@ class Engine(Base):
     ) -> Wavefunction:
         return Wavefunction.calculate(molecule, basis, guess)
 
-    def score(self, initial: Wavefunction, final: Wavefunction, metric: Metric) -> float:
+    def score(
+        self, initial: Wavefunction, final: Wavefunction, metric: Metric
+    ) -> float:
         match metric:
             case Metric.F_SCORE:
                 return f_score(initial, final)
