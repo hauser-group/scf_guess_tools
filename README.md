@@ -23,6 +23,8 @@ install this package as follows.
 - Run `conda install --channel conda-forge --channel pyscf --use-local
 scf_guess_tools`
 
+If you run into issues with the last conda install command, you can try: `conda install --channel conda-forge --channel pyscf --channel <~/path to conda build folder (e.g. ~/miniconda3/envs/<cond_env_name>/conda-bld/)> scf_guess_tools`. 
+
 ## How to Use
 
 ### Scratch Directories
