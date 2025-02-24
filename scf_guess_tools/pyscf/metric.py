@@ -9,8 +9,8 @@ def f_score(initial: Wavefunction, final: Wavefunction) -> float:
 
     S = initial.molecule.native.intor("int1e_ovlp")
 
-    Q = lambda P_guess, P_ref: np.trace(P_guess @ S @ P_ref @ S)
-    N = lambda P_ref: np.trace(P_ref @ S)
+    Q = lambda P_guess, P_ref: np.sum(P_guess * (S @ P_ref @ S))
+    N = lambda P_ref: np.sum(P_ref * S)
 
     numerator = Q(Da_guess, Da_ref) + Q(Db_guess, Db_ref)
     denominator = N(Da_ref) + N(Db_ref)
@@ -19,19 +19,42 @@ def f_score(initial: Wavefunction, final: Wavefunction) -> float:
 
 
 def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
+    # TODO look into the fro.-norm -> if there is some normalization to be done thereafter for triplets
     Da_guess, Db_guess = initial.Da, initial.Db
     Da_ref, Db_ref = final.Da, final.Db
     S = initial.molecule.native.intor("int1e_ovlp")
 
     Err_a = Da_guess @ Da_ref @ S - S @ Da_guess @ Da_ref
     Err_b = Db_guess @ Db_ref @ S - S @ Db_guess @ Db_ref
-    Err_a_t = np.trace(Err_a @ Err_a)
-    Err_b_t = np.trace(Err_b @ Err_b)
+    if Err_a.ndim == 2:  # singlet!
+        Err_a_t = np.trace(Err_a @ Err_a)
+        Err_b_t = np.trace(Err_b @ Err_b)
+
+    # UHF
+    elif Err_a.ndim == 3 and Err_a.shape[0] == 2:
+        Err_a_t = (
+            np.linalg.norm(Err_a[0], "fro") ** 2 + np.linalg.norm(Err_a[1], "fro") ** 2
+        )
+        Err_b_t = (
+            np.linalg.norm(Err_b[0], "fro") ** 2 + np.linalg.norm(Err_b[1], "fro") ** 2
+        )
+
+    else:
+        raise ValueError(f"Unexpected shape for error matrices: {Err_a.shape}")
+
     return Err_a_t + Err_b_t
 
 
 def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
-    mf = scf.RHF(initial.molecule.native)
+    if initial.molecule.singlet:
+        mf = scf.RHF(initial.molecule.native)
+        initial_D = 2 * initial.Da
+        final_D = 2 * final.Da
+    else:
+        mf = scf.UHF(initial.molecule.native)
+        initial_D = (initial.Da, initial.Db)
+        final_D = (final.Da, final.Db)
+
     hcore = mf.get_hcore(initial.molecule.native)
 
     # energy initial
