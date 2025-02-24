@@ -1,5 +1,5 @@
 import numpy as np
-
+import pyscf.scf as scf
 from .wavefunction import Wavefunction
 
 
@@ -31,6 +31,19 @@ def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
 
 
 def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
-    Da_guess, Db_guess = initial.Da, initial.Db
-    Da_ref, Db_ref = final.Da, final.Db
-    return 2
+    mf = scf.RHF(initial.molecule.native)
+    hcore = mf.get_hcore(initial.molecule.native)
+
+    # energy initial
+    initial_D = 2 * initial.Da
+    veff_guess = mf.get_veff(initial.molecule.native, initial_D)
+    E_guess_elec, _ = mf.energy_elec(initial_D, hcore, veff_guess)
+    E_guess = E_guess_elec + initial.molecule.native.energy_nuc()
+
+    # energy final
+    final_D = 2 * final.Da
+    veff_ref = mf.get_veff(final.molecule.native, final_D)
+    E_ref_elec, _ = mf.energy_elec(final_D, hcore, veff_ref)
+    E_ref = E_ref_elec + final.molecule.native.energy_nuc()
+
+    return E_guess / E_ref - 1.0
