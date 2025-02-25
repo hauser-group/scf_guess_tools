@@ -21,23 +21,28 @@ def f_score(initial: Wavefunction, final: Wavefunction) -> float:
 def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
     # TODO look into the fro.-norm -> if there is some normalization to be done thereafter for triplets
     Da_guess, Db_guess = initial.Da, initial.Db
-    Da_ref, Db_ref = final.Da, final.Db
+
     S = initial.molecule.native.intor("int1e_ovlp")
 
-    Err_a = Da_guess @ Da_ref @ S - S @ Da_guess @ Da_ref
-    Err_b = Db_guess @ Db_ref @ S - S @ Db_guess @ Db_ref
+    if initial.molecule.singlet:
+        Fa_guess = scf.hf.get_fock(scf.RHF(initial.molecule.native), dm=Da_guess)
+        Fb_guess = Fa_guess
+    else:
+        Fa_guess, Fb_guess = scf.hf.get_fock(
+            scf.UHF(initial.molecule.native), dm=(Da_guess, Db_guess)
+        )
+
+    Err_a = Da_guess @ Fa_guess @ S - S @ Da_guess @ Fa_guess
+    Err_b = Db_guess @ Fb_guess @ S - S @ Db_guess @ Fb_guess
+
     if Err_a.ndim == 2:  # singlet!
         Err_a_t = np.trace(Err_a @ Err_a)
         Err_b_t = np.trace(Err_b @ Err_b)
 
     # UHF
     elif Err_a.ndim == 3 and Err_a.shape[0] == 2:
-        Err_a_t = (
-            np.linalg.norm(Err_a[0], "fro") ** 2 + np.linalg.norm(Err_a[1], "fro") ** 2
-        )
-        Err_b_t = (
-            np.linalg.norm(Err_b[0], "fro") ** 2 + np.linalg.norm(Err_b[1], "fro") ** 2
-        )
+        Err_a_t = np.linalg.norm(Err_a[0], "fro") + np.linalg.norm(Err_a[1], "fro")
+        Err_b_t = np.linalg.norm(Err_b[0], "fro") + np.linalg.norm(Err_b[1], "fro")
 
     else:
         raise ValueError(f"Unexpected shape for error matrices: {Err_a.shape}")
