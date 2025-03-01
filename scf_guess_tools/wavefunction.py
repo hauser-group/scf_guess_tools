@@ -7,11 +7,13 @@ class Wavefunction(ABC):
     def __init__(
         self,
         molecule: Molecule,
+        basis: str,
         initial: str | Self = None,
         iterations: int = None,
         retried: bool = None,
     ):
         self._molecule = molecule
+        self._basis = basis
         self._initial = initial
         self._iterations = iterations
         self._retried = retried
@@ -24,6 +26,10 @@ class Wavefunction(ABC):
     @property
     def molecule(self) -> Molecule:
         return self._molecule
+
+    @property
+    def basis(self) -> str:
+        return self._basis
 
     @property
     def initial(self) -> str | Self:
@@ -39,17 +45,22 @@ class Wavefunction(ABC):
 
     @property
     @abstractmethod
-    def Da(self):
+    def S(self):
         pass
 
     @property
     @abstractmethod
-    def Db(self):
+    def D(self):
+        pass
+
+    @property
+    @abstractmethod
+    def F(self):
         pass
 
     @classmethod
     @abstractmethod
-    def guess(cls, molecule: Molecule, basis: str, method: str) -> Self:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
         pass
 
     @classmethod

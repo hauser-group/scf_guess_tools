@@ -1,37 +1,45 @@
 from ..wavefunction import Wavefunction as Base
 from .molecule import Molecule
 from pyscf.scf import RHF, UHF
+from pyscf.scf.hf import SCF
 from typing import Self
 from numpy.typing import NDArray
 
 
 class Wavefunction(Base):
 
-    def __init__(self, native: NDArray, *args, **kwargs):
+    def __init__(self, solver: SCF, D: NDArray, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._native = native
+        self._solver = solver
+        self._D = D
 
     @property
     def native(self) -> NDArray:
-        return self._native
+        return self._D
 
     @property
-    def Da(self) -> NDArray:
-        return self.native / 2 if self.molecule.singlet else self.native
+    def S(self) -> NDArray:
+        return self._solver.get_ovlp()
 
     @property
-    def Db(self) -> NDArray:
-        return self.Da
+    def D(self) -> NDArray:
+        return self._D / 2 if self.molecule.singlet else self._D
+
+    @property
+    def F(self) -> NDArray:
+        return self._solver.get_fock(dm=self._D)
 
     @classmethod
-    def guess(cls, molecule: Molecule, basis: str, method: str) -> Self:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
         molecule.native.basis = basis
         molecule.native.build()
 
-        guesser = RHF if molecule.singlet else UHF
-        guess = guesser(molecule.native).get_init_guess(molecule.native, method)
+        method = RHF if molecule.singlet else UHF
+        solver = method(molecule.native)
 
-        return Wavefunction(guess, molecule, method)
+        D = solver.get_init_guess(key=scheme)
+
+        return Wavefunction(solver, D, molecule, basis, scheme)
 
     @classmethod
     def calculate(
@@ -43,35 +51,49 @@ class Wavefunction(Base):
         molecule.native.build()
 
         method = RHF if molecule.singlet else UHF
-        calculation = method(molecule.native)
+        solver = method(molecule.native)
 
         if isinstance(guess, str):
-            calculation.init_guess = guess
+            solver.init_guess = guess
         else:
-            calculation.init_guess = guess.native
+            solver.init_guess = guess.native
 
-        calculation.run()
+        solver.run()
         retry = False
 
         if molecule.atoms <= 30:
-            mo, _, stable, _ = calculation.stability(return_status=True)
+            mo, _, stable, _ = solver.stability(return_status=True)
             retry = not stable
 
             while not stable:
-                dm = calculation.make_rdm1(mo, calculation.mo_occ)
-                calculation = calculation.run(dm)
-                mo, _, stable, _ = calculation.stability(return_status=True)
+                dm = solver.make_rdm1(mo, solver.mo_occ)
+                solver = solver.run(dm)
+                mo, _, stable, _ = solver.stability(return_status=True)
 
         return Wavefunction(
-            calculation.make_rdm1(), molecule, guess, calculation.cycles, retry
+            solver, solver.make_rdm1(), molecule, basis, guess, solver.cycles, retry
         )
 
     def __getstate__(self):
-        return (self.molecule, self.initial, self.iterations, self.retried, self.native)
+        return (
+            self.molecule,
+            self.basis,
+            self.initial,
+            self.iterations,
+            self.retried,
+            self.native,
+        )
 
     def __setstate__(self, serialized):
         self._molecule = serialized[0]
-        self._initial = serialized[1]
-        self._iterations = serialized[2]
-        self._retried = serialized[3]
-        self._native = serialized[4]
+        self._basis = serialized[1]
+        self._initial = serialized[2]
+        self._iterations = serialized[3]
+        self._retried = serialized[4]
+        self._D = serialized[5]
+
+        self._molecule.native.basis = self._basis
+        self._molecule.native.build()
+
+        method = RHF if self._molecule.singlet else UHF
+        self._solver = method(self._molecule.native)
