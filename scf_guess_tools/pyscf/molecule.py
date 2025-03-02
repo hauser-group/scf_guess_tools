@@ -38,8 +38,12 @@ class Molecule(Base):
     def atoms(self) -> int:
         return self._native.natm
 
+    @property
+    def geometry(self):
+        return self._native.atom
+
     def __getstate__(self):
-        return self.name, self.charge, self.multiplicity, self.native.atom
+        return self.name, self.charge, self.multiplicity, self.geometry
 
     def __setstate__(self, serialized):
         self._name, q, m, atom = serialized
