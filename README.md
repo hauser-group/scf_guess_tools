@@ -23,7 +23,8 @@ install this package as follows.
 - Run `conda install --channel conda-forge --channel pyscf --use-local
 scf_guess_tools`
 
-If you run into issues with the last conda install command, you can try: `conda install --channel conda-forge --channel pyscf --channel <~/path to conda build folder (e.g. ~/miniconda3/envs/<cond_env_name>/conda-bld/)> scf_guess_tools`. 
+If the last command fails, add `--channel <path-to-conda-bld-folder>` to
+manually specify the location of the package.
 
 ## How to Use
 
@@ -42,14 +43,14 @@ guesses.
 ```python
 from scf_guess_tools import Metric, Psi4Engine, PySCFEngine
 
-engine = Psi4Engine() # you switch between engines on-the-fly
+engine = Psi4Engine()  # you can switch between engines on-the-fly
 molecule = engine.load("ch3.xyz")
 final = engine.calculate(molecule, "pcseg-0")
 
-for method in engine.guessing_schemes:
-    initial = engine.guess(molecule, "pcseg-0", method)
+for scheme in engine.guessing_schemes():
+    initial = engine.guess(molecule, "pcseg-0", scheme)
     score = engine.score(initial, final, Metric.DIIS_ERROR)
-    print(f"{method} scored {score}")
+    print(f"{scheme} scored {score}")
 ```
 
 ### Caching
@@ -64,7 +65,7 @@ from scf_guess_tools import Metric, Molecule, Psi4Engine, Wavefunction
 
 engine = Psi4Engine(cache=True, verbose=1)
 molecule = engine.load("hoclo.xyz")
-initial = engine.guess(molecule, basis="pcseg-0", method="CORE")  # will be cached
+initial = engine.guess(molecule, basis="pcseg-0", scheme="CORE")  # will be cached
 final = engine.calculate(molecule, basis="pcseg-0")  # will be cached
 score = engine.score(initial, final, Metric.DIIS_ERROR)  # will be cached
 

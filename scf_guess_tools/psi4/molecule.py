@@ -41,10 +41,14 @@ class Molecule(Base):
     def atoms(self) -> int:
         return self._native.natom()
 
+    @property
+    def geometry(self):
+        return self._native.to_string(dtype="psi4")
+
     def __getstate__(self):
-        return self.native.to_string(dtype="psi4"), self.name
+        return self.name, self.geometry
 
     def __setstate__(self, serialized):
         self._native = Native.from_string(
-            serialized[0], name=serialized[1], dtype="psi4"
+            serialized[1], name=serialized[0], dtype="psi4"
         )

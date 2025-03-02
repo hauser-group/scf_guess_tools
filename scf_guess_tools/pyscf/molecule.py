@@ -16,7 +16,7 @@ class Molecule(Base):
         q = int(re.search(r"charge\s+(-?\d+)", lines[1]).group(1))
         m = int(re.search(r"multiplicity\s+(\d+)", lines[1]).group(1))
 
-        self._native = M(atom=path, charge=q, spin=m - 1)
+        self._native = M(atom=path, charge=q, spin=m - 1, cart=True)
 
     @property
     def native(self) -> Native:
@@ -38,9 +38,13 @@ class Molecule(Base):
     def atoms(self) -> int:
         return self._native.natm
 
+    @property
+    def geometry(self):
+        return self._native.atom
+
     def __getstate__(self):
-        return self.name, self.native.tostring(format="xyz")
+        return self.name, self.charge, self.multiplicity, self.geometry
 
     def __setstate__(self, serialized):
-        self._name = serialized[0]
-        self._native = Native().fromstring(serialized[1], format="xyz")
+        self._name, q, m, atom = serialized
+        self._native = M(atom=atom, charge=q, spin=m - 1)

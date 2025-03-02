@@ -1,17 +1,21 @@
+from __future__ import annotations
+
+from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
-from typing import Self
 
 
 class Wavefunction(ABC):
     def __init__(
         self,
         molecule: Molecule,
-        initial: str | Self = None,
+        basis: str,
+        initial: str | Wavefunction = None,
         iterations: int = None,
         retried: bool = None,
     ):
         self._molecule = molecule
+        self._basis = basis
         self._initial = initial
         self._iterations = iterations
         self._retried = retried
@@ -26,7 +30,11 @@ class Wavefunction(ABC):
         return self._molecule
 
     @property
-    def initial(self) -> str | Self:
+    def basis(self) -> str:
+        return self._basis
+
+    @property
+    def initial(self) -> str | Wavefunction:
         return self._initial
 
     @property
@@ -39,28 +47,51 @@ class Wavefunction(ABC):
 
     @property
     @abstractmethod
-    def Da(self):
+    def S(self) -> Matrix:
         pass
 
     @property
     @abstractmethod
-    def Db(self):
+    def D(self) -> Matrix | tuple[Matrix, Matrix]:
+        pass
+
+    @property
+    @abstractmethod
+    def F(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
     @classmethod
     @abstractmethod
-    def guess(cls, molecule: Molecule, basis: str, method: str) -> Self:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         pass
 
     @classmethod
     @abstractmethod
-    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
+    def calculate(
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction
+    ) -> Wavefunction:
         pass
 
-    @abstractmethod
+    def __eq__(self, other: Wavefunction) -> bool:
+        return (
+            self.molecule == other.molecule
+            and self.basis == other.basis
+            and self.initial == other.initial
+            and self.iterations == other.iterations
+            and self.retried == other.retried
+            and self.S == other.S
+            and self.F == other.F
+            and self.D == other.D
+        )
+
     def __getstate__(self):
-        pass
+        return (self.molecule, self.basis, self.initial, self.iterations, self.retried)
 
-    @abstractmethod
     def __setstate__(self, serialized):
-        pass
+        (
+            self._molecule,
+            self._basis,
+            self._initial,
+            self._iterations,
+            self._retried,
+        ) = serialized

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .metric import Metric
 from .molecule import Molecule
 from .wavefunction import Wavefunction
@@ -31,7 +33,7 @@ class Engine(ABC):
         pass
 
     @abstractmethod
-    def guess(self, molecule: Molecule, basis: str, method: str) -> Wavefunction:
+    def guess(self, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         pass
 
     @abstractmethod
@@ -46,7 +48,7 @@ class Engine(ABC):
     ) -> float:
         pass
 
-    @property
+    @classmethod
     @abstractmethod
-    def guessing_schemes(self) -> list[str]:
+    def guessing_schemes(cls) -> list[str]:
         pass
