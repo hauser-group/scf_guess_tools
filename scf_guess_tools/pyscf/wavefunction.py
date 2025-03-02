@@ -1,5 +1,6 @@
-from ..wavefunction import Wavefunction as Base
+from .matrix import Matrix
 from .molecule import Molecule
+from ..wavefunction import Wavefunction as Base
 from pyscf.scf import RHF, UHF
 from pyscf.scf.hf import SCF
 from typing import Self
@@ -14,20 +15,28 @@ class Wavefunction(Base):
         self._D = D
 
     @property
-    def native(self) -> NDArray:
-        return self._D
+    def native(self) -> SCF:
+        return self._solver
 
     @property
-    def S(self) -> NDArray:
-        return self._solver.get_ovlp()
+    def S(self) -> Matrix:
+        return Matrix(self._solver.get_ovlp())
 
     @property
-    def D(self) -> NDArray:
-        return self._D / 2 if self.molecule.singlet else self._D
+    def D(self) -> Matrix | tuple[Matrix, Matrix]:
+        if self.molecule.singlet:
+            return Matrix(self._D / 2)
+
+        return Matrix(self._D[0]), Matrix(self._D[1])
 
     @property
-    def F(self) -> NDArray:
-        return self._solver.get_fock(dm=self._D)
+    def F(self) -> Matrix | tuple[Matrix, Matrix]:
+        F = self._solver.get_fock(dm=self._D)
+
+        if self.molecule.singlet:
+            return Matrix(F)
+
+        return Matrix(F[0]), Matrix(F[1])
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
@@ -75,22 +84,11 @@ class Wavefunction(Base):
         )
 
     def __getstate__(self):
-        return (
-            self.molecule,
-            self.basis,
-            self.initial,
-            self.iterations,
-            self.retried,
-            self.native,
-        )
+        return super().__getstate__(), self._D
 
     def __setstate__(self, serialized):
-        self._molecule = serialized[0]
-        self._basis = serialized[1]
-        self._initial = serialized[2]
-        self._iterations = serialized[3]
-        self._retried = serialized[4]
-        self._D = serialized[5]
+        super().__setstate__(serialized[0])
+        self._D = serialized[1]
 
         self._molecule.native.basis = self._basis
         self._molecule.native.build()

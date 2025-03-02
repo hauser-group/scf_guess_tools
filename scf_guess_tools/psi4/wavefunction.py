@@ -4,8 +4,9 @@ import re
 
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
+from .matrix import Matrix
 from .molecule import Molecule
-from psi4.core import Matrix, Wavefunction as Native
+from psi4.core import Wavefunction as Native
 from typing import Self
 
 
@@ -96,21 +97,27 @@ class Wavefunction(Base):
 
     @property
     def S(self) -> Matrix:
-        return self._native.S()
+        return Matrix(self._native.S())
 
     @property
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
-            return self._native.Da_subset("AO")
+            return Matrix(self._native.Da_subset("AO"))
 
-        return self._native.Da_subset("AO"), self._native.Db_subset("AO")
+        return (
+            Matrix(self._native.Da_subset("AO")),
+            Matrix(self._native.Db_subset("AO")),
+        )
 
     @property
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
-            return self._native.Fa_subset("AO")
+            return Matrix(self._native.Fa_subset("AO"))
 
-        return self._native.Fa_subset("AO"), self._native.Fb_subset("AO")
+        return (
+            Matrix(self._native.Fa_subset("AO")),
+            Matrix(self._native.Fb_subset("AO")),
+        )
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
@@ -160,25 +167,8 @@ class Wavefunction(Base):
         return Wavefunction(wfn, molecule, basis, guess, iterations, retry)
 
     def __getstate__(self):
-        return (
-            self.molecule,
-            (
-                self.initial.native.to_file()
-                if isinstance(self.initial, Native)
-                else self.initial
-            ),
-            self.iterations,
-            self.retried,
-            self.native.to_file(),
-        )
+        return super().__getstate__(), self.native.to_file()
 
     def __setstate__(self, serialized):
-        self._molecule = serialized[0]
-        self._initial = (
-            serialized[1]
-            if isinstance(serialized[1], str)
-            else Native.from_file(serialized[1])
-        )
-        self._iterations = serialized[2]
-        self._retried = serialized[3]
-        self._native = Native.from_file(serialized[4])
+        super().__setstate__(serialized[0])
+        self._native = Native.from_file(serialized[1])

@@ -1,3 +1,4 @@
+from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
 from typing import Self
@@ -45,17 +46,17 @@ class Wavefunction(ABC):
 
     @property
     @abstractmethod
-    def S(self):
+    def S(self) -> Matrix:
         pass
 
     @property
     @abstractmethod
-    def D(self):
+    def D(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
     @property
     @abstractmethod
-    def F(self):
+    def F(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
     @classmethod
@@ -68,10 +69,26 @@ class Wavefunction(ABC):
     def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
         pass
 
-    @abstractmethod
-    def __getstate__(self):
-        pass
+    def __eq__(self, other: Self) -> bool:
+        return (
+            self.molecule == other.molecule
+            and self.basis == other.basis
+            and self.initial == other.initial
+            and self.iterations == other.iterations
+            and self.retried == other.retried
+            and self.S == other.S
+            and self.F == other.F
+            and self.D == other.D
+        )
 
-    @abstractmethod
+    def __getstate__(self):
+        return (self.molecule, self.basis, self.initial, self.iterations, self.retried)
+
     def __setstate__(self, serialized):
-        pass
+        (
+            self._molecule,
+            self._basis,
+            self._initial,
+            self._iterations,
+            self._retried,
+        ) = serialized

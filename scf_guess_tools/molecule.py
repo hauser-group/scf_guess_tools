@@ -41,7 +41,7 @@ class Molecule(ABC):
     def geometry(self):
         pass
 
-    def __eq__(self, other: Self):
+    def __eq__(self, other: Self) -> bool:
         return (
             self.name == other.name
             and self.charge == other.charge
