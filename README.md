@@ -42,14 +42,14 @@ guesses.
 ```python
 from scf_guess_tools import Metric, Psi4Engine, PySCFEngine
 
-engine = Psi4Engine() # you switch between engines on-the-fly
+engine = Psi4Engine()  # you can switch between engines on-the-fly
 molecule = engine.load("ch3.xyz")
 final = engine.calculate(molecule, "pcseg-0")
 
-for method in engine.guessing_schemes:
-    initial = engine.guess(molecule, "pcseg-0", method)
+for scheme in engine.guessing_schemes():
+    initial = engine.guess(molecule, "pcseg-0", scheme)
     score = engine.score(initial, final, Metric.DIIS_ERROR)
-    print(f"{method} scored {score}")
+    print(f"{scheme} scored {score}")
 ```
 
 ### Caching
@@ -64,7 +64,7 @@ from scf_guess_tools import Metric, Molecule, Psi4Engine, Wavefunction
 
 engine = Psi4Engine(cache=True, verbose=1)
 molecule = engine.load("hoclo.xyz")
-initial = engine.guess(molecule, basis="pcseg-0", method="CORE")  # will be cached
+initial = engine.guess(molecule, basis="pcseg-0", scheme="CORE")  # will be cached
 final = engine.calculate(molecule, basis="pcseg-0")  # will be cached
 score = engine.score(initial, final, Metric.DIIS_ERROR)  # will be cached
 

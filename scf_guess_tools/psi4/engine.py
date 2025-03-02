@@ -14,8 +14,8 @@ class Engine(Base):
     def load(self, path: str) -> Molecule:
         return Molecule(path)
 
-    def guess(self, molecule: Molecule, basis: str, method: str) -> Wavefunction:
-        return Wavefunction.guess(molecule, basis, method)
+    def guess(self, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
+        return Wavefunction.guess(molecule, basis, scheme)
 
     def calculate(
         self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
