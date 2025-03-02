@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Self
 
 
 class Matrix(ABC):
@@ -9,5 +10,5 @@ class Matrix(ABC):
         pass
 
     @abstractmethod
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: Matrix) -> bool:
         pass

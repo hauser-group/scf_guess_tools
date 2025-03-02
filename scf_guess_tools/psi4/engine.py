@@ -1,4 +1,4 @@
-from joblib import Memory
+from __future__ import annotations
 
 from ..engine import Engine as Base
 from ..metric import Metric
@@ -25,15 +25,14 @@ class Engine(Base):
     def score(
         self, initial: Wavefunction, final: Wavefunction, metric: Metric
     ) -> float:
-        match metric:
-            case Metric.F_SCORE:
-                return f_score(initial, final)
-            case Metric.DIIS_ERROR:
-                return diis_error(initial, final)
-            case Metric.ENERGY_ERROR:
-                return energy_error(initial, final)
-            case _:
-                raise NotImplementedError(f"{metric} not implemented for Psi4")
+        if metric == Metric.F_SCORE:
+            return f_score(initial, final)
+        elif metric == Metric.DIIS_ERROR:
+            return diis_error(initial, final)
+        elif metric == Metric.ENERGY_ERROR:
+            return energy_error(initial, final)
+        else:
+            raise NotImplementedError(f"{metric} not implemented for Psi4")
 
     @classmethod
     def guessing_schemes(cls) -> list[str]:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import psi4
 import re
@@ -7,7 +9,6 @@ from .auxilary import clean_context
 from .matrix import Matrix
 from .molecule import Molecule
 from psi4.core import Wavefunction as Native
-from typing import Self
 
 
 def _hartree_fock(
@@ -120,7 +121,7 @@ class Wavefunction(Base):
         )
 
     @classmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         with clean_context():
             psi4.set_options({"BASIS": basis, "GUESS": scheme})
 
@@ -139,8 +140,8 @@ class Wavefunction(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Self = None
-    ) -> Self:
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
+    ) -> Wavefunction:
         guess = "AUTO" if guess is None else guess
         guess_str = guess
 

@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Self
 
 
 class Molecule(ABC):
@@ -41,7 +42,7 @@ class Molecule(ABC):
     def geometry(self):
         pass
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: Molecule) -> bool:
         return (
             self.name == other.name
             and self.charge == other.charge

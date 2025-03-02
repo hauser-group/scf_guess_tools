@@ -1,8 +1,5 @@
-from pathlib import Path
-
 import random
 import re
-import shutil
 
 
 def replace_random_digit(original: str, modified: str):
@@ -22,11 +19,8 @@ def replace_random_digit(original: str, modified: str):
 
     content = content[:index] + new + content[index + 1 :]
 
-    print("NEW")
-
-    # with open(modified, "w", encoding="utf-8") as file:
-    #     print(header)
-    #     print(content)
-    #     file.write(header)
-    #     file.write(content)
-    shutil.copyfile(original, modified)
+    with open(modified, "w", encoding="utf-8") as file:
+        print(header)
+        print(content)
+        file.write(header)
+        file.write(content)

@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
-from typing import Self
 
 
 class Wavefunction(ABC):
@@ -9,7 +10,7 @@ class Wavefunction(ABC):
         self,
         molecule: Molecule,
         basis: str,
-        initial: str | Self = None,
+        initial: str | Wavefunction = None,
         iterations: int = None,
         retried: bool = None,
     ):
@@ -33,7 +34,7 @@ class Wavefunction(ABC):
         return self._basis
 
     @property
-    def initial(self) -> str | Self:
+    def initial(self) -> str | Wavefunction:
         return self._initial
 
     @property
@@ -61,15 +62,17 @@ class Wavefunction(ABC):
 
     @classmethod
     @abstractmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         pass
 
     @classmethod
     @abstractmethod
-    def calculate(cls, molecule: Molecule, basis: str, guess: str | Self) -> Self:
+    def calculate(
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction
+    ) -> Wavefunction:
         pass
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: Wavefunction) -> bool:
         return (
             self.molecule == other.molecule
             and self.basis == other.basis

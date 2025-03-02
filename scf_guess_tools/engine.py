@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .metric import Metric
 from .molecule import Molecule
 from .wavefunction import Wavefunction

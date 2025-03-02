@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 from .matrix import Matrix
 from .molecule import Molecule
 from ..wavefunction import Wavefunction as Base
 from pyscf.scf import RHF, UHF
 from pyscf.scf.hf import SCF
-from typing import Self
 from numpy.typing import NDArray
 
 
@@ -39,7 +40,7 @@ class Wavefunction(Base):
         return Matrix(F[0]), Matrix(F[1])
 
     @classmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Self:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         molecule.native.basis = basis
         molecule.native.build()
 
@@ -52,8 +53,8 @@ class Wavefunction(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Self = None
-    ) -> Self:
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
+    ) -> Wavefunction:
         guess = "minao" if guess is None else guess
 
         molecule.native.basis = basis
