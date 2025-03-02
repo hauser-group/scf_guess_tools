@@ -50,7 +50,7 @@ def test_molecule(engine: Engine, path: str):
     assert f(molecule) == molecule, "properties of molecule must not change"
     assert invocations == 1, "function must not be invoked for cached molecule"
 
-    modified_path = path.removesuffix(".xyz") + "-modified.xyz"
+    modified_path = path[:-4] + "-modified.xyz"
     replace_random_digit(path, modified_path)
     modified_molecule = engine.load(modified_path)
 
