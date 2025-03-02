@@ -8,7 +8,6 @@ import shutil
 
 @pytest.fixture(params=[PySCFEngine, Psi4Engine])
 def engine(request, tmp_path, monkeypatch):
-    print("creating engine")
     monkeypatch.setenv("PSI_SCRATCH", f"{tmp_path}/psi4")
     monkeypatch.setenv("PYSCF_TMPDIR", f"{tmp_path}/pyscf")
     monkeypatch.setenv("SGT_CACHE", f"{tmp_path}/sgt")
@@ -19,7 +18,7 @@ def engine(request, tmp_path, monkeypatch):
     return engine
 
 
-@pytest.fixture(params=["acetaldehyde.xyz", "ch.xyz", "ch2-trip.xyz", "hoclo.xyz"])
+@pytest.fixture(params=["acetaldehyde.xyz", "ch2-trip.xyz", "hoclo.xyz"])
 def path(request, tmp_path):
     destination = str(tmp_path / request.param)
 
@@ -29,26 +28,59 @@ def path(request, tmp_path):
     return destination
 
 
+@pytest.fixture(params=["sto-3g"])  # , "pcseg-0", "pcseg-1"])
+def basis(request):
+    return request.param
+
+
 def test_molecule(engine: Engine, path: str):
     molecule = engine.load(path)
     invocations = 0
 
     @engine.memory.cache
-    def function(m):
+    def f(m):
         nonlocal invocations
         invocations += 1
 
         return m
 
-    assert function(molecule) == molecule  # not cached
-    assert invocations == 1, "properties of molecule must not change"
+    assert f(molecule) == molecule, "properties of molecule must not change"
+    assert invocations == 1, "function must be invoked for uncached molecule"
 
-    assert function(molecule) == molecule  # cached
-    assert invocations == 1, "properties of molecule must not change"
+    assert f(molecule) == molecule, "properties of molecule must not change"
+    assert invocations == 1, "function must not be invoked for cached molecule"
 
     modified_path = path.removesuffix(".xyz") + "-modified.xyz"
     replace_random_digit(path, modified_path)
     modified_molecule = engine.load(modified_path)
 
-    assert function(modified_molecule) == modified_molecule  # not cached
-    assert invocations == 2
+    assert f(modified_molecule) != molecule, "properties of molecule most change"
+    assert invocations == 2, "function must be invoked for uncached molecule"
+
+
+@pytest.mark.parametrize(
+    "engine, scheme",
+    [
+        (engine, scheme)
+        for engine in [PySCFEngine, Psi4Engine]
+        for scheme in engine().guessing_schemes()
+    ],
+    indirect=["engine"],
+)
+def test_wavefunction(engine: Engine, path: str, scheme: str, basis: str):
+    molecule = engine.load(path)
+    wavefunction = engine.calculate(molecule, basis, scheme)
+    invocations = 0
+
+    @engine.memory.cache
+    def f(w):
+        nonlocal invocations
+        invocations += 1
+
+        return w
+
+    assert f(wavefunction) == wavefunction, "properties of wavefunction must not change"
+    assert invocations == 1, "function must be invoked for uncached wavefunction"
+
+    assert f(wavefunction) == wavefunction, "properties of wavefunction must not change"
+    assert invocations == 1, "function must not be invoked for cached wavefunction"

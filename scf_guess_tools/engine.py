@@ -46,7 +46,7 @@ class Engine(ABC):
     ) -> float:
         pass
 
-    @property
+    @classmethod
     @abstractmethod
-    def guessing_schemes(self) -> list[str]:
+    def guessing_schemes(cls) -> list[str]:
         pass

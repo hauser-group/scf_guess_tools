@@ -14,4 +14,8 @@ class Matrix(Base):
         return self._native
 
     def __eq__(self, other: Self) -> bool:
-        return np.array_equal(self.native.nph, other.native.nph)
+        for a, b in zip(self.native.nph, other.native.nph):
+            if not np.array_equal(a, b):
+                return False
+
+        return True

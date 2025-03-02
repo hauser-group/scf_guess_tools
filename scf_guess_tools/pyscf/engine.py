@@ -33,6 +33,6 @@ class Engine(Base):
             case _:
                 raise NotImplementedError(f"{metric} not implemented for PySCF")
 
-    @property
-    def guessing_schemes(self) -> list[str]:
+    @classmethod
+    def guessing_schemes(cls) -> list[str]:
         return ["minao", "1e", "atom", "huckel", "vsap"]
