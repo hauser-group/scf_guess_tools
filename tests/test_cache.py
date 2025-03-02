@@ -63,7 +63,7 @@ def test_molecule(engine: Engine, path: str):
     [
         (engine, scheme)
         for engine in [PySCFEngine, Psi4Engine]
-        for scheme in engine().guessing_schemes()
+        for scheme in engine.guessing_schemes()
     ],
     indirect=["engine"],
 )
