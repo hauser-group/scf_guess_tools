@@ -11,6 +11,14 @@ class Engine(Base):
     def __init__(self, cache: bool = True, verbose: int = 0):
         super().__init__("psi4" if cache else None, verbose)
 
+    @classmethod
+    def backend(cls) -> list[str]:
+        return "Psi4"
+
+    @classmethod
+    def guessing_schemes(cls) -> list[str]:
+        return ["CORE", "SAD", "SADNO", "GWH", "HUCKEL", "MODHUCKEL", "SAP", "SAPGAU"]
+
     def load(self, path: str) -> Molecule:
         return Molecule(path)
 
@@ -33,7 +41,3 @@ class Engine(Base):
             return energy_error(initial, final)
         else:
             raise NotImplementedError(f"{metric} not implemented for Psi4")
-
-    @classmethod
-    def guessing_schemes(cls) -> list[str]:
-        return ["CORE", "SAD", "SADNO", "GWH", "HUCKEL", "MODHUCKEL", "SAP", "SAPGAU"]

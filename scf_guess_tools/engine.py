@@ -24,6 +24,16 @@ class Engine(ABC):
         self.calculate = self._memory.cache(self.calculate, ignore=["self"])
         self.score = self._memory.cache(self.score, ignore=["self"])
 
+    @classmethod
+    @abstractmethod
+    def backend(cls) -> str:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def guessing_schemes(cls) -> list[str]:
+        pass
+
     @property
     def memory(self) -> Memory:
         return self._memory
@@ -46,9 +56,4 @@ class Engine(ABC):
     def score(
         self, initial: Wavefunction, final: Wavefunction, metric: Metric
     ) -> float:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def guessing_schemes(cls) -> list[str]:
         pass

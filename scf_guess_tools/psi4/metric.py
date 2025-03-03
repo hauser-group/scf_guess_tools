@@ -1,13 +1,14 @@
 import numpy as np
 import psi4
 
+from ..common import tuplify
 from .wavefunction import Wavefunction
 from psi4.core import Matrix
 
 
 def f_score(initial: Wavefunction, final: Wavefunction) -> float:
     S = final.S
-    D = tuple(zip((*(initial.D,),), (*(final.D,),)))
+    D = tuple(zip(tuplify(initial.D), tuplify(final.D)))
     Q = [(Di @ S @ Df @ S).trace for Di, Df in D]
     N = [(Df @ S).trace for _, Df in D]
 
