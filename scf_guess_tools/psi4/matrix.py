@@ -38,3 +38,7 @@ class Matrix(Base):
 
     def __matmul__(self, other: Matrix) -> Matrix:
         return Matrix(doublet(self.native, other.native))
+
+    @property
+    def trace(self) -> float:
+        return self.native.trace()

@@ -6,22 +6,12 @@ from psi4.core import Matrix
 
 
 def f_score(initial: Wavefunction, final: Wavefunction) -> float:
-    Da_guess, Db_guess = (
-        initial.native.Da_subset("AO").np,
-        initial.native.Db_subset("AO").np,
-    )
-    Da_ref, Db_ref = final.native.Db_subset("AO").np, final.native.Db_subset("AO").np
+    S = final.S
+    D = tuple(zip((*(initial.D,),), (*(final.D,),)))
+    Q = [(Di @ S @ Df @ S).trace for Di, Df in D]
+    N = [(Df @ S).trace for _, Df in D]
 
-    S = Matrix(*Da_ref.shape)
-    S.remove_symmetry(final.native.S(), final.native.aotoso().transpose())
-
-    Q = lambda P_guess, P_ref: np.trace(P_guess @ S @ P_ref @ S)
-    N = lambda P_ref: np.trace(P_ref @ S)
-
-    numerator = Q(Da_guess, Da_ref) + Q(Db_guess, Db_ref)
-    denominator = N(Da_ref) + N(Db_ref)
-
-    return numerator / denominator
+    return sum(Q) / sum(N)
 
 
 def diis_error(initial: Wavefunction, final: Wavefunction) -> float:

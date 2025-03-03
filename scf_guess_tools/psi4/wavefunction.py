@@ -103,22 +103,16 @@ class Wavefunction(Base):
     @property
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
-            return Matrix(self._native.Da_subset("AO"))
+            return Matrix(self._native.Da())
 
-        return (
-            Matrix(self._native.Da_subset("AO")),
-            Matrix(self._native.Db_subset("AO")),
-        )
+        return (Matrix(self._native.Da()), Matrix(self._native.Db()))
 
     @property
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
-            return Matrix(self._native.Fa_subset("AO"))
+            return Matrix(self._native.Fa())
 
-        return (
-            Matrix(self._native.Fa_subset("AO")),
-            Matrix(self._native.Fb_subset("AO")),
-        )
+        return (Matrix(self._native.Fa()), Matrix(self._native.Fb()))
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:

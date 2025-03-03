@@ -28,3 +28,8 @@ class Matrix(ABC):
     @abstractmethod
     def __matmul__(self, other: Matrix) -> Matrix:
         pass
+
+    @property
+    @abstractmethod
+    def trace(self) -> float:
+        pass

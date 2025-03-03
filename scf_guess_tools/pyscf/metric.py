@@ -4,18 +4,12 @@ from .wavefunction import Wavefunction
 
 
 def f_score(initial: Wavefunction, final: Wavefunction) -> float:
-    Da_guess, Db_guess = initial.Da, initial.Db
-    Da_ref, Db_ref = final.Da, final.Db
+    S = final.S
+    D = tuple(zip((*(initial.D,),), (*(final.D,),)))
+    Q = [(Di @ S @ Df @ S).trace for Di, Df in D]
+    N = [(Df @ S).trace for _, Df in D]
 
-    S = initial.molecule.native.intor("int1e_ovlp")
-
-    Q = lambda P_guess, P_ref: np.sum(P_guess * (S @ P_ref @ S))
-    N = lambda P_ref: np.sum(P_ref * S)
-
-    numerator = Q(Da_guess, Da_ref) + Q(Db_guess, Db_ref)
-    denominator = N(Da_ref) + N(Db_ref)
-
-    return numerator / denominator
+    return sum(Q) / sum(N)
 
 
 def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
