@@ -26,7 +26,7 @@ class Engine(ABC):
 
     @classmethod
     @abstractmethod
-    def backend(cls) -> str:
+    def __repr__(cls) -> str:
         pass
 
     @classmethod

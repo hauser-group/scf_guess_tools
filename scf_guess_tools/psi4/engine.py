@@ -12,8 +12,8 @@ class Engine(Base):
         super().__init__("psi4" if cache else None, verbose)
 
     @classmethod
-    def backend(cls) -> list[str]:
-        return "Psi4"
+    def __repr__(cls) -> str:
+        return "Psi4Engine"
 
     @classmethod
     def guessing_schemes(cls) -> list[str]:

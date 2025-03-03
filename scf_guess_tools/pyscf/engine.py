@@ -12,8 +12,8 @@ class Engine(Base):
         super().__init__("pyscf" if cache else None, verbose)
 
     @classmethod
-    def backend(cls) -> list[str]:
-        return "PySCF"
+    def __repr__(cls) -> str:
+        return "PySCFEngine"
 
     @classmethod
     def guessing_schemes(cls) -> list[str]:
