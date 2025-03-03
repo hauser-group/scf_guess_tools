@@ -119,8 +119,8 @@ class Wavefunction(Base):
         with clean_context():
             psi4.set_options({"BASIS": basis, "GUESS": scheme})
 
-            basis = psi4.core.BasisSet.build(molecule.native, target=basis)
-            ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis)
+            basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
+            ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
             start_wfn = psi4.driver.scf_wavefunction_factory(
                 name="HF",
                 ref_wfn=ref_wfn,
