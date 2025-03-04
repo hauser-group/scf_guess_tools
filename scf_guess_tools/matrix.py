@@ -31,5 +31,15 @@ class Matrix(ABC):
 
     @property
     @abstractmethod
+    def size(self) -> float:
+        pass
+
+    @property
+    @abstractmethod
     def trace(self) -> float:
+        pass
+
+    @property
+    @abstractmethod
+    def sum_of_squares(self) -> float:
         pass

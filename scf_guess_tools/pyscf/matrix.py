@@ -30,5 +30,13 @@ class Matrix(Base):
         return Matrix(self.native.__matmul__(other.native))
 
     @property
+    def size(self) -> int:
+        return self.native.size
+
+    @property
     def trace(self) -> float:
         return np.trace(self.native)
+
+    @property
+    def sum_of_squares(self) -> float:
+        return np.sum(self.native**2)

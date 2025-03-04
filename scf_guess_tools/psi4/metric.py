@@ -16,25 +16,22 @@ def f_score(initial: Wavefunction, final: Wavefunction) -> float:
 
 
 def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
-    # TODO this is buggy
+    print("DIIIIIIIIIIS")
 
-    Da_guess, Db_guess = (
-        initial.native.Da_subset("AO").np,
-        initial.native.Db_subset("AO").np,
-    )
-    Fa_guess, Fb_guess = (
-        initial.native.Fa_subset("AO").np,
-        initial.native.Fb_subset("AO").np,
-    )
-    Da_ref, Db_ref = final.native.Da_subset("AO").np, final.native.Db_subset("AO").np
+    print(initial.F.native.to_array(dense=True) - final.F.native.to_array(dense=True))
+    print()
 
-    S = Matrix(*Da_ref.shape)
-    S.remove_symmetry(final.native.S(), final.native.aotoso().transpose())
+    S = final.S.native.to_array(dense=True)
+    D = tuple(d.native.to_array(dense=True) for d in tuplify(initial.D))
+    F = tuple(f.native.to_array(dense=True) for f in tuplify(final.F))
 
-    Ea = Fa_guess @ Da_guess @ S - S @ Da_guess @ Fa_guess
-    Eb = Fb_guess @ Db_guess @ S - S @ Db_guess @ Fb_guess
+    E = [f @ d @ S - S @ d @ f for d, f in zip(D, F)]
 
-    return np.trace(Ea @ Ea) + np.trace(Eb @ Eb)
+    # print()
+    # print(E)
+    # print()
+
+    return np.sqrt(sum([np.sum(e**2) for e in E]) / sum([e.size for e in E]))
 
 
 def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
