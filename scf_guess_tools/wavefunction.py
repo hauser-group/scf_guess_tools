@@ -66,6 +66,11 @@ class Wavefunction(ABC):
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
+    @property
+    @abstractmethod
+    def energy(self) -> float:
+        pass
+
     @classmethod
     @abstractmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
@@ -89,6 +94,7 @@ class Wavefunction(ABC):
             and self.S == other.S
             and self.F == other.F
             and self.D == other.D
+            and self.energy == other.energy
         )
 
     def __getstate__(self):

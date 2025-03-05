@@ -25,31 +25,35 @@ def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
 
 
 def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
-    # TODO this is buggy
-    # TODO this needs generalization to other bases
-    # TODO check theory level
+    return initial.energy / final.energy - 1.0
 
-    with psi4.driver.p4util.hold_options_state():
-        try:
-            psi4.core.clean_options()
-            psi4.core.clean()
-            psi4.core.be_quiet()
 
-            psi4.set_options(
-                {
-                    "BASIS": "pcseg-0",
-                    "SCF_TYPE": "PK",
-                    "MAXITER": 0,
-                    "FAIL_ON_MAXITER": False,
-                    "REFERENCE": "RHF" if initial.molecule.singlet else "UHF",
-                }
-            )
-
-            E_guess = psi4.energy("HF", molecule=initial.molecule.native)
-            E_ref = final.native.energy()
-        finally:
-            psi4.core.clean_options()
-            psi4.core.clean()
-            psi4.core.reopen_outfile()
-
-    return E_guess / E_ref - 1.0
+# def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
+#     # TODO this is buggy
+#     # TODO this needs generalization to other bases
+#     # TODO check theory level
+#
+#     with psi4.driver.p4util.hold_options_state():
+#         try:
+#             psi4.core.clean_options()
+#             psi4.core.clean()
+#             psi4.core.be_quiet()
+#
+#             psi4.set_options(
+#                 {
+#                     "BASIS": "pcseg-0",
+#                     "SCF_TYPE": "PK",
+#                     "MAXITER": 0,
+#                     "FAIL_ON_MAXITER": False,
+#                     "REFERENCE": "RHF" if initial.molecule.singlet else "UHF",
+#                 }
+#             )
+#
+#             E_guess = psi4.energy("HF", molecule=initial.molecule.native)
+#             E_ref = final.native.energy()
+#         finally:
+#             psi4.core.clean_options()
+#             psi4.core.clean()
+#             psi4.core.reopen_outfile()
+#
+#     return E_guess / E_ref - 1.0

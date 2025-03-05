@@ -13,7 +13,7 @@ from psi4.core import Wavefunction as Native
 
 def _hartree_fock(
     molecule: Molecule, guess: str, basis: str, second_order: bool = False
-) -> Native:
+) -> tuple[float, Native]:
     stability_analysis = "NONE"
     if not molecule.singlet:
         stability_analysis = "FOLLOW"
@@ -42,8 +42,7 @@ def _hartree_fock(
             }
         )
 
-    _, wfn = psi4.energy("HF", molecule=molecule.native, return_wfn=True)
-    return wfn
+    return psi4.energy("HF", molecule=molecule.native, return_wfn=True)
 
 
 def _hartree_fock_iterations(stdout_file: str) -> int:
@@ -116,7 +115,7 @@ class Wavefunction(Base):
             try:
                 with clean_context():
                     psi4.set_options({"MAXITER": 0, "FAIL_ON_MAXITER": True})
-                    native = _hartree_fock(
+                    _, native = _hartree_fock(
                         self.molecule, self.initial, self.basis, False
                     )
             except psi4.driver.SCFConvergenceError as e:
@@ -126,6 +125,21 @@ class Wavefunction(Base):
             return Matrix(native.Fa())
 
         return (Matrix(native.Fa()), Matrix(native.Fb()))
+
+    @property
+    def energy(self) -> float:
+        if self.converged:
+            return self.native.energy()
+
+        try:
+            with clean_context():
+                psi4.set_options({"MAXITER": 0, "FAIL_ON_MAXITER": True})
+                wfn = self.calculate(self.molecule, self.basis, self, clean=False)
+                wfn.native.compute_energy()
+                return wfn.native.energy()
+        except psi4.driver.SCFConvergenceError as e:
+            e.wfn.compute_energy()
+            return e.wfn.energy()
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
@@ -150,7 +164,11 @@ class Wavefunction(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
+        cls,
+        molecule: Molecule,
+        basis: str,
+        guess: str | Wavefunction = None,
+        clean=True,
     ) -> Wavefunction:
         guess = "AUTO" if guess is None else guess
         guess_str = guess
@@ -165,8 +183,13 @@ class Wavefunction(Base):
             guess_str = "READ"
 
         def calculate():
-            with clean_context() as stdout_file:
-                wfn = _hartree_fock(molecule, guess_str, basis, retry)
+            if clean:
+                with clean_context() as stdout_file:
+                    _, wfn = _hartree_fock(molecule, guess_str, basis, retry)
+                    iterations = _hartree_fock_iterations(stdout_file)
+                    return wfn, iterations
+            else:
+                _, wfn = _hartree_fock(molecule, guess_str, basis, retry)
                 iterations = _hartree_fock_iterations(stdout_file)
                 return wfn, iterations
 
@@ -179,8 +202,9 @@ class Wavefunction(Base):
             retry = True
             try:
                 wfn, iterations = calculate()
-            except psi4.ConvergenceError:
+            except psi4.SCFConvergenceError as e:
                 converged = False
+                wfn = e.wfn
 
         return Wavefunction(
             wfn, False, molecule, basis, guess, iterations, retry, converged=converged

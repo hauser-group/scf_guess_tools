@@ -24,27 +24,4 @@ def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
 
 
 def energy_error(initial: Wavefunction, final: Wavefunction) -> float:
-    if initial.molecule.singlet:
-        mf = scf.RHF(initial.molecule.native)
-        initial_D = 2 * initial.Da
-        final_D = 2 * final.Da
-    else:
-        mf = scf.UHF(initial.molecule.native)
-        initial_D = (initial.Da, initial.Db)
-        final_D = (final.Da, final.Db)
-
-    hcore = mf.get_hcore(initial.molecule.native)
-
-    # energy initial
-    initial_D = 2 * initial.Da
-    veff_guess = mf.get_veff(initial.molecule.native, initial_D)
-    E_guess_elec, _ = mf.energy_elec(initial_D, hcore, veff_guess)
-    E_guess = E_guess_elec + initial.molecule.native.energy_nuc()
-
-    # energy final
-    final_D = 2 * final.Da
-    veff_ref = mf.get_veff(final.molecule.native, final_D)
-    E_ref_elec, _ = mf.energy_elec(final_D, hcore, veff_ref)
-    E_ref = E_ref_elec + final.molecule.native.energy_nuc()
-
-    return E_guess / E_ref - 1.0
+    return initial.energy / final.energy - 1.0
