@@ -49,7 +49,7 @@ class Wavefunction(Base):
 
         D = solver.get_init_guess(key=scheme)
 
-        return Wavefunction(solver, D, molecule, basis, scheme)
+        return Wavefunction(solver, D, molecule, basis, scheme, converged=False)
 
     @classmethod
     def calculate(
@@ -81,7 +81,14 @@ class Wavefunction(Base):
                 mo, _, stable, _ = solver.stability(return_status=True)
 
         return Wavefunction(
-            solver, solver.make_rdm1(), molecule, basis, guess, solver.cycles, retry
+            solver,
+            solver.make_rdm1(),
+            molecule,
+            basis,
+            guess,
+            solver.cycles,
+            retry,
+            solver.converged,
         )
 
     def __getstate__(self):

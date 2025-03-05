@@ -88,9 +88,10 @@ def _hartree_fock_iterations(stdout_file: str) -> int:
 
 
 class Wavefunction(Base):
-    def __init__(self, native: Native, *args, **kwargs):
+    def __init__(self, native: Native, is_guess: bool, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._native = native
+        self._is_guess = is_guess
 
     @property
     def native(self) -> Native:
@@ -109,16 +110,26 @@ class Wavefunction(Base):
 
     @property
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
-        if self.molecule.singlet:
-            return Matrix(self._native.Fa())
+        native = self._native
 
-        return (Matrix(self._native.Fa()), Matrix(self._native.Fb()))
+        if self._is_guess:
+            try:
+                with clean_context():
+                    psi4.set_options({"MAXITER": 0, "FAIL_ON_MAXITER": True})
+                    native = _hartree_fock(
+                        self.molecule, self.initial, self.basis, False
+                    )
+            except psi4.driver.SCFConvergenceError as e:
+                native = e.wfn
+
+        if self.molecule.singlet:
+            return Matrix(native.Fa())
+
+        return (Matrix(native.Fa()), Matrix(native.Fb()))
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         with clean_context():
-            psi4.set_options({"BASIS": basis, "GUESS": scheme})
-
             basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
             start_wfn = psi4.driver.scf_wavefunction_factory(
@@ -130,7 +141,12 @@ class Wavefunction(Base):
             start_wfn.form_Shalf()
             start_wfn.guess()
 
-            return Wavefunction(start_wfn, molecule, basis, scheme)
+            # Calling form_F doesn't deliver a correct fock matrix, so we handle it in self.F
+            # We can't handle it here because this would cause a deviation in the density
+
+            return Wavefunction(
+                start_wfn, True, molecule, basis, scheme, converged=False
+            )
 
     @classmethod
     def calculate(
@@ -148,22 +164,32 @@ class Wavefunction(Base):
             guess.native.to_file(filename=guess_file)
             guess_str = "READ"
 
-        try:
+        def calculate():
             with clean_context() as stdout_file:
-                retry = False
                 wfn = _hartree_fock(molecule, guess_str, basis, retry)
                 iterations = _hartree_fock_iterations(stdout_file)
-        except psi4.ConvergenceError:
-            with clean_context() as stdout_file:
-                retry = True
-                wfn = _hartree_fock(molecule, guess_str, basis, retry)
-                iterations = _hartree_fock_iterations(stdout_file)
+                return wfn, iterations
 
-        return Wavefunction(wfn, molecule, basis, guess, iterations, retry)
+        converged = True
+        retry = False
+
+        try:
+            wfn, iterations = calculate()
+        except psi4.ConvergenceError:
+            retry = True
+            try:
+                wfn, iterations = calculate()
+            except psi4.ConvergenceError:
+                converged = False
+
+        return Wavefunction(
+            wfn, False, molecule, basis, guess, iterations, retry, converged=converged
+        )
 
     def __getstate__(self):
-        return super().__getstate__(), self.native.to_file()
+        return super().__getstate__(), self.native.to_file(), self._is_guess
 
     def __setstate__(self, serialized):
         super().__setstate__(serialized[0])
         self._native = Native.from_file(serialized[1])
+        self._is_guess = serialized[2]

@@ -16,22 +16,12 @@ def f_score(initial: Wavefunction, final: Wavefunction) -> float:
 
 
 def diis_error(initial: Wavefunction, final: Wavefunction) -> float:
-    print("DIIIIIIIIIIS")
-
-    print(initial.F.native.to_array(dense=True) - final.F.native.to_array(dense=True))
-    print()
-
-    S = final.S.native.to_array(dense=True)
-    D = tuple(d.native.to_array(dense=True) for d in tuplify(initial.D))
-    F = tuple(f.native.to_array(dense=True) for f in tuplify(final.F))
-
+    S = initial.S
+    D = tuplify(initial.D)
+    F = tuplify(initial.F)
     E = [f @ d @ S - S @ d @ f for d, f in zip(D, F)]
 
-    # print()
-    # print(E)
-    # print()
-
-    return np.sqrt(sum([np.sum(e**2) for e in E]) / sum([e.size for e in E]))
+    return np.sqrt(sum([e.sum_of_squares for e in E]) / sum([e.size for e in E]))
 
 
 def energy_error(initial: Wavefunction, final: Wavefunction) -> float:

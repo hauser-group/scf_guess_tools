@@ -13,12 +13,14 @@ class Wavefunction(ABC):
         initial: str | Wavefunction = None,
         iterations: int = None,
         retried: bool = None,
+        converged: bool = None,
     ):
         self._molecule = molecule
         self._basis = basis
         self._initial = initial
         self._iterations = iterations
         self._retried = retried
+        self._converged = converged
 
     @property
     @abstractmethod
@@ -44,6 +46,10 @@ class Wavefunction(ABC):
     @property
     def retried(self) -> bool:
         return self._retried
+
+    @property
+    def converged(self) -> bool:
+        return self._converged
 
     @property
     @abstractmethod
@@ -79,13 +85,21 @@ class Wavefunction(ABC):
             and self.initial == other.initial
             and self.iterations == other.iterations
             and self.retried == other.retried
+            and self.converged == other.converged
             and self.S == other.S
             and self.F == other.F
             and self.D == other.D
         )
 
     def __getstate__(self):
-        return (self.molecule, self.basis, self.initial, self.iterations, self.retried)
+        return (
+            self.molecule,
+            self.basis,
+            self.initial,
+            self.iterations,
+            self.retried,
+            self.converged,
+        )
 
     def __setstate__(self, serialized):
         (
@@ -94,4 +108,5 @@ class Wavefunction(ABC):
             self._initial,
             self._iterations,
             self._retried,
+            self._converged,
         ) = serialized
