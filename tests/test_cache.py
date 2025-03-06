@@ -18,7 +18,7 @@ def engine(request, tmp_path, monkeypatch):
     return engine
 
 
-@pytest.fixture(params=["acetaldehyde.xyz", "ch2-trip.xyz", "hoclo.xyz"])
+@pytest.fixture(params=["acetaldehyde.xyz", "ch2-trip.xyz", "hoclo.xyz", "CuMe.xyz"])
 def path(request, tmp_path):
     destination = str(tmp_path / request.param)
 

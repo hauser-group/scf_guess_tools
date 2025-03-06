@@ -13,12 +13,14 @@ class Wavefunction(ABC):
         initial: str | Wavefunction = None,
         iterations: int = None,
         retried: bool = None,
+        converged: bool = None,
     ):
         self._molecule = molecule
         self._basis = basis
         self._initial = initial
         self._iterations = iterations
         self._retried = retried
+        self._converged = converged
 
     @property
     @abstractmethod
@@ -46,6 +48,10 @@ class Wavefunction(ABC):
         return self._retried
 
     @property
+    def converged(self) -> bool:
+        return self._converged
+
+    @property
     @abstractmethod
     def S(self) -> Matrix:
         pass
@@ -59,6 +65,29 @@ class Wavefunction(ABC):
     @abstractmethod
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
+
+    @property
+    @abstractmethod
+    def H(self) -> Matrix:
+        pass
+
+    @property
+    def energy(self) -> float:  # TODO check for memory inefficiencies
+        if self.molecule.singlet:
+            # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
+
+            result = self.F + self.H
+            result = result @ self.D
+
+            return result.trace
+        else:
+            # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3c_unrestricted-hartree-fock.ipynb
+
+            Da, Db = self.D
+            Fa, Fb = self.F
+
+            terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [self.H, Fa, Fb])]
+            return 0.5 * sum(terms)
 
     @classmethod
     @abstractmethod
@@ -79,13 +108,23 @@ class Wavefunction(ABC):
             and self.initial == other.initial
             and self.iterations == other.iterations
             and self.retried == other.retried
+            and self.converged == other.converged
             and self.S == other.S
-            and self.F == other.F
             and self.D == other.D
+            and self.F == other.F
+            and self.H == other.H
+            and self.energy == other.energy
         )
 
     def __getstate__(self):
-        return (self.molecule, self.basis, self.initial, self.iterations, self.retried)
+        return (
+            self.molecule,
+            self.basis,
+            self.initial,
+            self.iterations,
+            self.retried,
+            self.converged,
+        )
 
     def __setstate__(self, serialized):
         (
@@ -94,4 +133,5 @@ class Wavefunction(ABC):
             self._initial,
             self._iterations,
             self._retried,
+            self._converged,
         ) = serialized

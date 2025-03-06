@@ -9,19 +9,18 @@ from numpy.typing import NDArray
 
 
 class Wavefunction(Base):
-
-    def __init__(self, solver: SCF, D: NDArray, *args, **kwargs):
+    def __init__(self, native: SCF, D: NDArray, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._solver = solver
+        self._native = native
         self._D = D
 
     @property
     def native(self) -> SCF:
-        return self._solver
+        return self._native
 
     @property
     def S(self) -> Matrix:
-        return Matrix(self._solver.get_ovlp())
+        return Matrix(self._native.get_ovlp())
 
     @property
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
@@ -32,12 +31,16 @@ class Wavefunction(Base):
 
     @property
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
-        F = self._solver.get_fock(dm=self._D)
+        F = self._native.get_fock(dm=self._D)
 
         if self.molecule.singlet:
             return Matrix(F)
 
         return Matrix(F[0]), Matrix(F[1])
+
+    @property
+    def H(self) -> Matrix:
+        return Matrix(self.native.get_hcore())
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
@@ -49,7 +52,7 @@ class Wavefunction(Base):
 
         D = solver.get_init_guess(key=scheme)
 
-        return Wavefunction(solver, D, molecule, basis, scheme)
+        return Wavefunction(solver, D, molecule, basis, scheme, converged=False)
 
     @classmethod
     def calculate(
@@ -81,7 +84,14 @@ class Wavefunction(Base):
                 mo, _, stable, _ = solver.stability(return_status=True)
 
         return Wavefunction(
-            solver, solver.make_rdm1(), molecule, basis, guess, solver.cycles, retry
+            solver,
+            solver.make_rdm1(),
+            molecule,
+            basis,
+            guess,
+            solver.cycles,
+            retry,
+            solver.converged,
         )
 
     def __getstate__(self):
@@ -95,4 +105,4 @@ class Wavefunction(Base):
         self._molecule.native.build()
 
         method = RHF if self._molecule.singlet else UHF
-        self._solver = method(self._molecule.native)
+        self._native = method(self._molecule.native)

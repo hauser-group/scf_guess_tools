@@ -16,7 +16,7 @@ class Molecule(Base):
         q = int(re.search(r"charge\s+(-?\d+)", lines[1]).group(1))
         m = int(re.search(r"multiplicity\s+(\d+)", lines[1]).group(1))
 
-        self._native = M(atom=path, charge=q, spin=m - 1, cart=True)
+        self._native = M(atom=path, charge=q, spin=m - 1)
 
     @property
     def native(self) -> Native:
