@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from ..common import tuplify
 from ..matrix import Matrix as Base
 from psi4.core import Matrix as Native, doublet
 from numpy.typing import NDArray
@@ -9,12 +8,31 @@ import numpy as np
 
 
 class Matrix(Base):
-    def __init__(self, native: Native):
-        self._native = native
-
     @property
     def native(self) -> Native:
         return self._native
+
+    @property
+    def size(self) -> int:
+        shape = (self.native.shape,) if self.native.nirrep() == 1 else self.native.shape
+        rows = sum([i for i, _ in shape])
+        columns = sum([j for _, j in shape])
+        return rows * columns
+
+    @property
+    def trace(self) -> float:
+        return self.native.trace()
+
+    @property
+    def sum_of_squares(self) -> float:
+        return self.native.sum_of_squares()
+
+    @property
+    def numpy(self) -> NDArray:
+        return self.native.to_array(dense=True)
+
+    def __init__(self, native: Native):
+        self._native = native
 
     def __repr__(self) -> str:
         return "\n".join([irrep.__repr__() for irrep in self.native.nph])
@@ -40,22 +58,3 @@ class Matrix(Base):
 
     def __matmul__(self, other: Matrix) -> Matrix:
         return Matrix(doublet(self.native, other.native))
-
-    @property
-    def size(self) -> int:
-        shape = (self.native.shape,) if self.native.nirrep() == 1 else self.native.shape
-        rows = sum([i for i, _ in shape])
-        columns = sum([j for _, j in shape])
-        return rows * columns
-
-    @property
-    def trace(self) -> float:
-        return self.native.trace()
-
-    @property
-    def sum_of_squares(self) -> float:
-        return self.native.sum_of_squares()
-
-    @property
-    def numpy(self) -> NDArray:
-        return self.native.to_array(dense=True)

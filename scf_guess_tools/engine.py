@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from joblib import Memory
+
 import os
+import scf_guess_tools.molecule as m
+import scf_guess_tools.wavefunction as w
 
 
 class Engine(ABC):
@@ -19,6 +24,10 @@ class Engine(ABC):
         self.calculate = self._memory.cache(self.calculate, ignore=["self"])
         self.score = self._memory.cache(self.score, ignore=["self"])
 
+    @property
+    def memory(self) -> Memory:
+        return self._memory
+
     @classmethod
     @abstractmethod
     def __repr__(cls) -> str:
@@ -29,6 +38,19 @@ class Engine(ABC):
     def guessing_schemes(cls) -> list[str]:
         pass
 
-    @property
-    def memory(self) -> Memory:
-        return self._memory
+    @abstractmethod
+    def load(self, path: str) -> m.Molecule:
+        pass
+
+    @abstractmethod
+    def guess(self, molecule: m.Molecule, basis: str, scheme: str) -> w.Wavefunction:
+        pass
+
+    @abstractmethod
+    def calculate(
+        self,
+        molecule: m.Molecule,
+        basis: str,
+        guess: str | w.Wavefunction | None = None,
+    ) -> w.Wavefunction:
+        pass

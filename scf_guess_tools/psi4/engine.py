@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from ..engine import Engine as Base
 from tempfile import TemporaryDirectory
 
 import psi4
+import scf_guess_tools.psi4.molecule as m
+import scf_guess_tools.psi4.wavefunction as w
 
 
 class Engine(Base):
@@ -25,3 +29,17 @@ class Engine(Base):
     @classmethod
     def guessing_schemes(cls) -> list[str]:
         return ["CORE", "SAD", "SADNO", "GWH", "HUCKEL", "MODHUCKEL", "SAP", "SAPGAU"]
+
+    def load(self, path: str) -> m.Molecule:
+        return m.Molecule.load(self, path)
+
+    def guess(self, molecule: m.Molecule, basis: str, scheme: str) -> w.Wavefunction:
+        return w.Wavefunction.guess(self, molecule, basis, scheme)
+
+    def calculate(
+        self,
+        molecule: m.Molecule,
+        basis: str,
+        guess: str | w.Wavefunction | None = None,
+    ) -> w.Wavefunction:
+        return w.Wavefunction.calculate(self, molecule, basis, guess)
