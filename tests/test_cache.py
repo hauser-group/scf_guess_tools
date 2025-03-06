@@ -8,9 +8,13 @@ import shutil
 
 @pytest.fixture(params=[PyEngine, PsiEngine])
 def engine(request, tmp_path, monkeypatch):
-    monkeypatch.setenv("PSI_SCRATCH", f"{tmp_path}/psi4")
-    monkeypatch.setenv("PYSCF_TMPDIR", f"{tmp_path}/pyscf")
-    monkeypatch.setenv("SGT_CACHE", f"{tmp_path}/sgt")
+    variables = ["PSI_SCRATCH", "PYSCF_TMPDIR", "SGT_CACHE"]
+    directories = ["psi4", "pyscf", "sgt"]
+
+    for variable, directory in zip(variables, directories):
+        path = f"{tmp_path}/{directory}"
+        monkeypatch.setenv(variable, path)
+        os.makedirs(path, exist_ok=True)
 
     engine = request.param(cache=True, verbose=1)
     engine.memory.clear()
