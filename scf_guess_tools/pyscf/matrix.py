@@ -40,3 +40,7 @@ class Matrix(Base):
     @property
     def sum_of_squares(self) -> float:
         return np.sum(self.native**2)
+
+    @property
+    def numpy(self) -> NDArray:
+        return self._native

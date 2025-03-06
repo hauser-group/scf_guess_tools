@@ -3,6 +3,7 @@ from __future__ import annotations
 from ..common import tuplify
 from ..matrix import Matrix as Base
 from psi4.core import Matrix as Native, doublet
+from numpy.typing import NDArray
 
 import numpy as np
 
@@ -54,3 +55,7 @@ class Matrix(Base):
     @property
     def sum_of_squares(self) -> float:
         return self.native.sum_of_squares()
+
+    @property
+    def numpy(self) -> NDArray:
+        return self.native.to_array(dense=True)

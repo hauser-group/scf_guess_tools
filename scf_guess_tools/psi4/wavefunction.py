@@ -127,19 +127,8 @@ class Wavefunction(Base):
         return (Matrix(native.Fa()), Matrix(native.Fb()))
 
     @property
-    def energy(self) -> float:
-        if self.converged:
-            return self.native.energy()
-
-        try:
-            with clean_context():
-                psi4.set_options({"MAXITER": 0, "FAIL_ON_MAXITER": True})
-                wfn = self.calculate(self.molecule, self.basis, self, clean=False)
-                wfn.native.compute_energy()
-                return wfn.native.energy()
-        except psi4.driver.SCFConvergenceError as e:
-            e.wfn.compute_energy()
-            return e.wfn.energy()
+    def H(self) -> Matrix:
+        return Matrix(self.native.H())
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:

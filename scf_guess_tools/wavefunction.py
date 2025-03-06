@@ -68,8 +68,26 @@ class Wavefunction(ABC):
 
     @property
     @abstractmethod
-    def energy(self) -> float:
+    def H(self) -> Matrix:
         pass
+
+    @property
+    def energy(self) -> float:  # TODO check for memory inefficiencies
+        if self.molecule.singlet:
+            # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
+
+            result = self.F + self.H
+            result = result @ self.D
+
+            return result.trace
+        else:
+            # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3c_unrestricted-hartree-fock.ipynb
+
+            Da, Db = self.D
+            Fa, Fb = self.F
+
+            terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [self.H, Fa, Fb])]
+            return 0.5 * sum(terms)
 
     @classmethod
     @abstractmethod
@@ -92,8 +110,9 @@ class Wavefunction(ABC):
             and self.retried == other.retried
             and self.converged == other.converged
             and self.S == other.S
-            and self.F == other.F
             and self.D == other.D
+            and self.F == other.F
+            and self.H == other.H
             and self.energy == other.energy
         )
 

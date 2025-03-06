@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from numpy.typing import NDArray
 
 
 class Matrix(ABC):
@@ -42,4 +43,9 @@ class Matrix(ABC):
     @property
     @abstractmethod
     def sum_of_squares(self) -> float:
+        pass
+
+    @property
+    @abstractmethod
+    def numpy(self) -> NDArray:
         pass

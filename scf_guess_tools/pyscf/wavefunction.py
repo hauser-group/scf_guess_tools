@@ -39,18 +39,8 @@ class Wavefunction(Base):
         return Matrix(F[0]), Matrix(F[1])
 
     @property
-    def energy(self) -> float:
-        if self.converged:
-            return self.native.e_tot
-
-        self.molecule.native.basis = self.basis
-        self.molecule.native.build()
-
-        method = RHF if self.molecule.singlet else UHF
-        solver = method(self.molecule.native)
-
-        solver.max_cycle = 0
-        return solver.kernel(dm=self._D)
+    def H(self) -> Matrix:
+        return Matrix(self.native.get_hcore())
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
