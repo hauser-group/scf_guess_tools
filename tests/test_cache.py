@@ -1,12 +1,12 @@
 from common import replace_random_digit
-from scf_guess_tools import Engine, PySCFEngine, Psi4Engine
+from scf_guess_tools import Engine, PyEngine, PsiEngine
 
 import os
 import pytest
 import shutil
 
 
-@pytest.fixture(params=[PySCFEngine, Psi4Engine])
+@pytest.fixture(params=[PyEngine, PsiEngine])
 def engine(request, tmp_path, monkeypatch):
     monkeypatch.setenv("PSI_SCRATCH", f"{tmp_path}/psi4")
     monkeypatch.setenv("PYSCF_TMPDIR", f"{tmp_path}/pyscf")
@@ -62,7 +62,7 @@ def test_molecule(engine: Engine, path: str):
     "engine, scheme",
     [
         (engine, scheme)
-        for engine in [PySCFEngine, Psi4Engine]
+        for engine in [PyEngine, PsiEngine]
         for scheme in engine.guessing_schemes()
     ],
     indirect=["engine"],

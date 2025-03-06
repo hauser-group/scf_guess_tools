@@ -22,7 +22,6 @@ class Engine(ABC):
 
         self.guess = self._memory.cache(self.guess, ignore=["self"])
         self.calculate = self._memory.cache(self.calculate, ignore=["self"])
-        self.score = self._memory.cache(self.score, ignore=["self"])
 
     @property
     def memory(self) -> Memory:
