@@ -1,8 +1,3 @@
-from __future__ import annotations
-
-from .metric import Metric
-from .molecule import Molecule
-from .wavefunction import Wavefunction
 from abc import ABC, abstractmethod
 from joblib import Memory
 import os
@@ -37,23 +32,3 @@ class Engine(ABC):
     @property
     def memory(self) -> Memory:
         return self._memory
-
-    @abstractmethod
-    def load(self, path: str) -> Molecule:
-        pass
-
-    @abstractmethod
-    def guess(self, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
-        pass
-
-    @abstractmethod
-    def calculate(
-        self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
-    ) -> Wavefunction:
-        pass
-
-    @abstractmethod
-    def score(
-        self, initial: Wavefunction, final: Wavefunction, metric: Metric
-    ) -> float:
-        pass
