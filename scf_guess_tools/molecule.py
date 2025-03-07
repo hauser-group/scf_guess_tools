@@ -3,7 +3,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
-class Molecule(ABC):
+class MoleculeBuilder(ABC):
+    @classmethod
+    @abstractmethod
+    def load(cls, path: str) -> Molecule:
+        pass
+
+
+class Molecule(MoleculeBuilder, ABC):
     @property
     @abstractmethod
     def native(self):

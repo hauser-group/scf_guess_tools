@@ -1,26 +1,25 @@
 from __future__ import annotations
 
+from ..wavefunction import Wavefunction as Base
 from .matrix import Matrix
 from .molecule import Molecule
-from ..wavefunction import Wavefunction as Base
-from pyscf.scf import RHF, UHF
-from pyscf.scf.hf import SCF
 from numpy.typing import NDArray
+from pyscf.scf import RHF, UHF
+from pyscf.scf.hf import SCF as Native
 
 
 class Wavefunction(Base):
-    def __init__(self, native: SCF, D: NDArray, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._native = native
-        self._D = D
-
     @property
-    def native(self) -> SCF:
+    def native(self) -> Native:
         return self._native
 
     @property
     def S(self) -> Matrix:
         return Matrix(self._native.get_ovlp())
+
+    @property
+    def H(self) -> Matrix:
+        return Matrix(self.native.get_hcore())
 
     @property
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
@@ -38,9 +37,23 @@ class Wavefunction(Base):
 
         return Matrix(F[0]), Matrix(F[1])
 
-    @property
-    def H(self) -> Matrix:
-        return Matrix(self.native.get_hcore())
+    def __init__(self, native: Native, D: NDArray, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._native = native
+        self._D = D
+
+    def __getstate__(self):
+        return super().__getstate__(), self._D
+
+    def __setstate__(self, serialized):
+        super().__setstate__(serialized[0])
+        self._D = serialized[1]
+
+        self._molecule.native.basis = self._basis
+        self._molecule.native.build()
+
+        method = RHF if self._molecule.singlet else UHF
+        self._native = method(self._molecule.native)
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
@@ -56,7 +69,7 @@ class Wavefunction(Base):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction = None
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
         guess = "minao" if guess is None else guess
 
@@ -93,16 +106,3 @@ class Wavefunction(Base):
             retry,
             solver.converged,
         )
-
-    def __getstate__(self):
-        return super().__getstate__(), self._D
-
-    def __setstate__(self, serialized):
-        super().__setstate__(serialized[0])
-        self._D = serialized[1]
-
-        self._molecule.native.basis = self._basis
-        self._molecule.native.build()
-
-        method = RHF if self._molecule.singlet else UHF
-        self._native = method(self._molecule.native)

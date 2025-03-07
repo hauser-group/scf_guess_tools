@@ -5,23 +5,21 @@ from .molecule import Molecule
 from abc import ABC, abstractmethod
 
 
-class Wavefunction(ABC):
-    def __init__(
-        self,
-        molecule: Molecule,
-        basis: str,
-        initial: str | Wavefunction = None,
-        iterations: int = None,
-        retried: bool = None,
-        converged: bool = None,
-    ):
-        self._molecule = molecule
-        self._basis = basis
-        self._initial = initial
-        self._iterations = iterations
-        self._retried = retried
-        self._converged = converged
+class WavefunctionBuilder(ABC):
+    @classmethod
+    @abstractmethod
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
+        pass
 
+    @classmethod
+    @abstractmethod
+    def calculate(
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
+    ) -> Wavefunction:
+        pass
+
+
+class Wavefunction(WavefunctionBuilder, ABC):
     @property
     @abstractmethod
     def native(self):
@@ -58,17 +56,17 @@ class Wavefunction(ABC):
 
     @property
     @abstractmethod
+    def H(self) -> Matrix:
+        pass
+
+    @property
+    @abstractmethod
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
     @property
     @abstractmethod
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
-        pass
-
-    @property
-    @abstractmethod
-    def H(self) -> Matrix:
         pass
 
     @property
@@ -89,17 +87,21 @@ class Wavefunction(ABC):
             terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [self.H, Fa, Fb])]
             return 0.5 * sum(terms)
 
-    @classmethod
-    @abstractmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction
-    ) -> Wavefunction:
-        pass
+    def __init__(
+        self,
+        molecule: Molecule,
+        basis: str,
+        initial: str | Wavefunction = None,
+        iterations: int = None,
+        retried: bool = None,
+        converged: bool = None,
+    ):
+        self._molecule = molecule
+        self._basis = basis
+        self._initial = initial
+        self._iterations = iterations
+        self._retried = retried
+        self._converged = converged
 
     def __eq__(self, other: Wavefunction) -> bool:
         return (

@@ -1,28 +1,32 @@
 from __future__ import annotations
 
-from .metric import Metric
-from .molecule import Molecule
-from .wavefunction import Wavefunction
+from .common import Singleton
+from .molecule import MoleculeBuilder
+from .wavefunction import WavefunctionBuilder
 from abc import ABC, abstractmethod
 from joblib import Memory
+
 import os
 
 
-class Engine(ABC):
+class Engine(MoleculeBuilder, WavefunctionBuilder, ABC, metaclass=Singleton):
     def __init__(self, cache: str, verbose: int):
         if cache is None:
             return
 
-        base = os.environ.get("SGT_CACHE")
+        directory = os.environ.get("SGT_CACHE")
 
-        if base is None:
+        if directory is None:
             raise RuntimeError("SGT_CACHE environment variable not set")
 
-        self._memory = Memory(base, verbose=verbose)
+        self._memory = Memory(directory, verbose=verbose)
 
         self.guess = self._memory.cache(self.guess, ignore=["self"])
         self.calculate = self._memory.cache(self.calculate, ignore=["self"])
-        self.score = self._memory.cache(self.score, ignore=["self"])
+
+    @property
+    def memory(self) -> Memory:
+        return self._memory
 
     @classmethod
     @abstractmethod
@@ -32,28 +36,4 @@ class Engine(ABC):
     @classmethod
     @abstractmethod
     def guessing_schemes(cls) -> list[str]:
-        pass
-
-    @property
-    def memory(self) -> Memory:
-        return self._memory
-
-    @abstractmethod
-    def load(self, path: str) -> Molecule:
-        pass
-
-    @abstractmethod
-    def guess(self, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
-        pass
-
-    @abstractmethod
-    def calculate(
-        self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
-    ) -> Wavefunction:
-        pass
-
-    @abstractmethod
-    def score(
-        self, initial: Wavefunction, final: Wavefunction, metric: Metric
-    ) -> float:
         pass

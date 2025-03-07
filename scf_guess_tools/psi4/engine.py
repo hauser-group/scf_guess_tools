@@ -1,43 +1,54 @@
 from __future__ import annotations
 
 from ..engine import Engine as Base
-from ..metric import Metric
-from .metric import f_score, diis_error, energy_error
-from .molecule import Molecule
-from .wavefunction import Wavefunction
+from ..molecule import Molecule
+from ..wavefunction import Wavefunction
+
+import os
+import psi4
 
 
 class Engine(Base):
-    def __init__(self, cache: bool = True, verbose: int = 0):
-        super().__init__("psi4" if cache else None, verbose)
+    def __init__(self, cache: bool = True, verbose: int = 0, **kwargs):
+        super().__init__(f"{self}" if cache else None, verbose)
+
+        directory = os.environ.get("PSI_SCRATCH")
+
+        if directory is None:
+            raise RuntimeError("PSI_SCRATCH environment variable not set")
+
+        self._output_directory = f"{directory}/{self}"
+        os.makedirs(self._output_directory, exist_ok=True)
+
+        psi4.set_output_file(
+            self.output_file, append=False, execute=True, print_header=False
+        )
+
+    @property
+    def output_file(self) -> str:
+        return f"{self._output_directory}/stdout"  # don't rename, bug with READ option
+
+    def load(self, path: str) -> Molecule:
+        from .molecule import Molecule
+
+        return Molecule.load(path)
+
+    def guess(self, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
+        from .wavefunction import Wavefunction
+
+        return Wavefunction.guess(molecule, basis, scheme)
+
+    def calculate(
+        self, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
+    ) -> Wavefunction:
+        from .wavefunction import Wavefunction
+
+        return Wavefunction.calculate(molecule, basis, guess)
 
     @classmethod
     def __repr__(cls) -> str:
-        return "Psi4Engine"
+        return "PsiEngine"
 
     @classmethod
     def guessing_schemes(cls) -> list[str]:
         return ["CORE", "SAD", "SADNO", "GWH", "HUCKEL", "MODHUCKEL", "SAP", "SAPGAU"]
-
-    def load(self, path: str) -> Molecule:
-        return Molecule(path)
-
-    def guess(self, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
-        return Wavefunction.guess(molecule, basis, scheme)
-
-    def calculate(
-        self, molecule: Molecule, basis: str, guess: str | Wavefunction = None
-    ) -> Wavefunction:
-        return Wavefunction.calculate(molecule, basis, guess)
-
-    def score(
-        self, initial: Wavefunction, final: Wavefunction, metric: Metric
-    ) -> float:
-        if metric == Metric.F_SCORE:
-            return f_score(initial, final)
-        elif metric == Metric.DIIS_ERROR:
-            return diis_error(initial, final)
-        elif metric == Metric.ENERGY_ERROR:
-            return energy_error(initial, final)
-        else:
-            raise NotImplementedError(f"{metric} not implemented for Psi4")

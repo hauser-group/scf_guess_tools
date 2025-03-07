@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import os
-import psi4
-import re
-
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
+from .engine import Engine
 from .matrix import Matrix
 from .molecule import Molecule
 from psi4.core import Wavefunction as Native
+
+import os
+import psi4
+import re
 
 
 def _hartree_fock(
@@ -87,11 +88,6 @@ def _hartree_fock_iterations(stdout_file: str) -> int:
 
 
 class Wavefunction(Base):
-    def __init__(self, native: Native, is_guess: bool, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._native = native
-        self._is_guess = is_guess
-
     @property
     def native(self) -> Native:
         return self._native
@@ -99,6 +95,10 @@ class Wavefunction(Base):
     @property
     def S(self) -> Matrix:
         return Matrix(self._native.S())
+
+    @property
+    def H(self) -> Matrix:
+        return Matrix(self.native.H())
 
     @property
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
@@ -126,9 +126,18 @@ class Wavefunction(Base):
 
         return (Matrix(native.Fa()), Matrix(native.Fb()))
 
-    @property
-    def H(self) -> Matrix:
-        return Matrix(self.native.H())
+    def __init__(self, native: Native, is_guess: bool, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._native = native
+        self._is_guess = is_guess
+
+    def __getstate__(self):
+        return super().__getstate__(), self.native.to_file(), self._is_guess
+
+    def __setstate__(self, serialized):
+        super().__setstate__(serialized[0])
+        self._native = Native.from_file(serialized[1])
+        self._is_guess = serialized[2]
 
     @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
@@ -153,11 +162,7 @@ class Wavefunction(Base):
 
     @classmethod
     def calculate(
-        cls,
-        molecule: Molecule,
-        basis: str,
-        guess: str | Wavefunction = None,
-        clean=True,
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
         guess = "AUTO" if guess is None else guess
         guess_str = guess
@@ -172,14 +177,11 @@ class Wavefunction(Base):
             guess_str = "READ"
 
         def calculate():
-            if clean:
-                with clean_context() as stdout_file:
-                    _, wfn = _hartree_fock(molecule, guess_str, basis, retry)
-                    iterations = _hartree_fock_iterations(stdout_file)
-                    return wfn, iterations
-            else:
+            with clean_context():
                 _, wfn = _hartree_fock(molecule, guess_str, basis, retry)
-                iterations = _hartree_fock_iterations(stdout_file)
+                iterations = _hartree_fock_iterations(
+                    Engine(reinit_singleton=False).output_file
+                )
                 return wfn, iterations
 
         converged = True
@@ -196,13 +198,12 @@ class Wavefunction(Base):
                 wfn = e.wfn
 
         return Wavefunction(
-            wfn, False, molecule, basis, guess, iterations, retry, converged=converged
+            wfn,
+            False,
+            molecule,
+            basis,
+            guess,
+            iterations,
+            retry,
+            converged=converged,
         )
-
-    def __getstate__(self):
-        return super().__getstate__(), self.native.to_file(), self._is_guess
-
-    def __setstate__(self, serialized):
-        super().__setstate__(serialized[0])
-        self._native = Native.from_file(serialized[1])
-        self._is_guess = serialized[2]
