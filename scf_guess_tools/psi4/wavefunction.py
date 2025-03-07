@@ -179,7 +179,9 @@ class Wavefunction(Base):
         def calculate():
             with clean_context():
                 _, wfn = _hartree_fock(molecule, guess_str, basis, retry)
-                iterations = _hartree_fock_iterations(Engine().output_file)
+                iterations = _hartree_fock_iterations(
+                    Engine(reinit_singleton=False).output_file
+                )
                 return wfn, iterations
 
         converged = True

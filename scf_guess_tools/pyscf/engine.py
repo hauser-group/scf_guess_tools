@@ -6,7 +6,7 @@ from ..wavefunction import Wavefunction
 
 
 class Engine(Base):
-    def __init__(self, cache: bool = True, verbose: int = 0):
+    def __init__(self, cache: bool = True, verbose: int = 0, **kwargs):
         super().__init__(f"{self}" if cache else None, verbose)
 
     def load(self, path: str) -> Molecule:

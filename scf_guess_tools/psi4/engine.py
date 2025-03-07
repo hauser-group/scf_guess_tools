@@ -9,7 +9,7 @@ import psi4
 
 
 class Engine(Base):
-    def __init__(self, cache: bool = True, verbose: int = 0):
+    def __init__(self, cache: bool = True, verbose: int = 0, **kwargs):
         super().__init__(f"{self}" if cache else None, verbose)
 
         self._output_directory = TemporaryDirectory()
