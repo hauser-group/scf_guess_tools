@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..wavefunction import Wavefunction as Base
+from .engine import Engine
 from .matrix import Matrix
 from .molecule import Molecule
 from numpy.typing import NDArray
@@ -71,20 +72,20 @@ class Wavefunction(Base):
     def calculate(
         cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
-        guess = "minao" if guess is None else guess
-
         molecule.native.basis = basis
         molecule.native.build()
 
         method = RHF if molecule.singlet else UHF
         solver = method(molecule.native)
 
-        if isinstance(guess, str):
-            solver.init_guess = guess
-        else:
-            solver.init_guess = guess.native
+        guess = solver.init_guess if guess is None else guess
 
-        solver.run()
+        if isinstance(guess, str):
+            assert guess in Engine(reinit_singleton=False).guessing_schemes()
+            solver.run(init_guess=guess)
+        else:
+            solver.kernel(dm0=guess._D)
+
         retry = False
 
         if molecule.atoms <= 30:
