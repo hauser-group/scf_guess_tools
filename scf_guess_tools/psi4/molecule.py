@@ -5,7 +5,6 @@ from psi4.core import Molecule as Native
 
 import os
 import re
-import scf_guess_tools.engine as e
 
 
 class Molecule(Base):
@@ -33,8 +32,7 @@ class Molecule(Base):
     def geometry(self):
         return self._native.to_string(dtype="psi4")
 
-    def __init__(self, engine: e.Engine, native: Native):
-        super().__init__(engine)
+    def __init__(self, native: Native):
         self._native = native
 
     def __getstate__(self):
@@ -46,7 +44,7 @@ class Molecule(Base):
         )
 
     @classmethod
-    def load(cls, engine: e.Engine, path: str) -> Molecule:
+    def load(cls, path: str) -> Molecule:
         with open(path, "r") as file:
             lines = file.readlines()
 
@@ -59,4 +57,4 @@ class Molecule(Base):
         base_name = os.path.basename(path)
         name, _ = os.path.splitext(base_name)
 
-        return Molecule(engine, Native.from_string(xyz, name=name, dtype="xyz+"))
+        return Molecule(Native.from_string(xyz, name=name, dtype="xyz+"))

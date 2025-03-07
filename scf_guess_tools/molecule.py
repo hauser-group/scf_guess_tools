@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-import scf_guess_tools.engine as e
+
+class MoleculeBuilder(ABC):
+    @classmethod
+    @abstractmethod
+    def load(cls, path: str) -> Molecule:
+        pass
 
 
-class Molecule(ABC):
-    @property
-    def engine(self) -> e.Engine:
-        return self._engine
-
+class Molecule(MoleculeBuilder, ABC):
     @property
     @abstractmethod
     def native(self):
@@ -48,9 +49,6 @@ class Molecule(ABC):
     def geometry(self):
         pass
 
-    def __init__(self, engine: e.Engine):
-        self._engine = engine
-
     def __eq__(self, other: Molecule) -> bool:
         return (
             self.name == other.name
@@ -66,9 +64,4 @@ class Molecule(ABC):
 
     @abstractmethod
     def __setstate__(self, serialized):
-        pass
-
-    @classmethod
-    @abstractmethod
-    def load(self, engine: e.Engine, path: str) -> Molecule:
         pass

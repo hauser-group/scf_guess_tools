@@ -1,24 +1,32 @@
 from __future__ import annotations
 
 from .matrix import Matrix
+from .molecule import Molecule
 from abc import ABC, abstractmethod
 
-import scf_guess_tools.engine as e
-import scf_guess_tools.molecule as m
+
+class WavefunctionBuilder(ABC):
+    @classmethod
+    @abstractmethod
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def calculate(
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
+    ) -> Wavefunction:
+        pass
 
 
-class Wavefunction(ABC):
-    @property
-    def engine(self) -> e.Engine:
-        return self._engine
-
+class Wavefunction(WavefunctionBuilder, ABC):
     @property
     @abstractmethod
     def native(self):
         pass
 
     @property
-    def molecule(self) -> m.Molecule:
+    def molecule(self) -> Molecule:
         return self._molecule
 
     @property
@@ -81,15 +89,13 @@ class Wavefunction(ABC):
 
     def __init__(
         self,
-        engine: e.Engine,
-        molecule: m.Molecule,
+        molecule: Molecule,
         basis: str,
         initial: str | Wavefunction = None,
         iterations: int = None,
         retried: bool = None,
         converged: bool = None,
     ):
-        self._engine = engine
         self._molecule = molecule
         self._basis = basis
         self._initial = initial
@@ -131,21 +137,3 @@ class Wavefunction(ABC):
             self._retried,
             self._converged,
         ) = serialized
-
-    @classmethod
-    @abstractmethod
-    def guess(
-        cls, engine: e.Engine, molecule: m.Molecule, basis: str, scheme: str
-    ) -> Wavefunction:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def calculate(
-        cls,
-        engine: e.Engine,
-        molecule: m.Molecule,
-        basis: str,
-        guess: str | Wavefunction | None = None,
-    ) -> Wavefunction:
-        pass

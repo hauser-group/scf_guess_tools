@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from ..wavefunction import Wavefunction as Base
 from .matrix import Matrix
+from .molecule import Molecule
 from numpy.typing import NDArray
 from pyscf.scf import RHF, UHF
 from pyscf.scf.hf import SCF as Native
-
-import scf_guess_tools.pyscf.engine as e
-import scf_guess_tools.pyscf.molecule as m
 
 
 class Wavefunction(Base):
@@ -58,9 +56,7 @@ class Wavefunction(Base):
         self._native = method(self._molecule.native)
 
     @classmethod
-    def guess(
-        cls, engine: e.Engine, molecule: m.Molecule, basis: str, scheme: str
-    ) -> Wavefunction:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         molecule.native.basis = basis
         molecule.native.build()
 
@@ -69,15 +65,11 @@ class Wavefunction(Base):
 
         D = solver.get_init_guess(key=scheme)
 
-        return Wavefunction(solver, D, engine, molecule, basis, scheme, converged=False)
+        return Wavefunction(solver, D, molecule, basis, scheme, converged=False)
 
     @classmethod
     def calculate(
-        cls,
-        engine: e.Engine,
-        molecule: m.Molecule,
-        basis: str,
-        guess: str | Wavefunction | None = None,
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
         guess = "minao" if guess is None else guess
 
@@ -107,7 +99,6 @@ class Wavefunction(Base):
         return Wavefunction(
             solver,
             solver.make_rdm1(),
-            engine,
             molecule,
             basis,
             guess,

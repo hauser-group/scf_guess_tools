@@ -5,7 +5,6 @@ from pyscf.gto import M, Mole as Native
 
 import os
 import re
-import scf_guess_tools.pyscf.engine as e
 
 
 class Molecule(Base):
@@ -33,8 +32,7 @@ class Molecule(Base):
     def geometry(self):
         return self._native.atom
 
-    def __init__(self, engine: e.Engine, name: str, native: Native):
-        super().__init__(engine)
+    def __init__(self, name: str, native: Native):
         self._name = name
         self._native = native
 
@@ -46,7 +44,7 @@ class Molecule(Base):
         self._native = M(atom=atom, charge=q, spin=m - 1)
 
     @classmethod
-    def load(cls, engine: e.Engine, path: str) -> Molecule:
+    def load(cls, path: str) -> Molecule:
         base_name = os.path.basename(path)
         name, _ = os.path.splitext(base_name)
 
@@ -56,4 +54,4 @@ class Molecule(Base):
         q = int(re.search(r"charge\s+(-?\d+)", lines[1]).group(1))
         m = int(re.search(r"multiplicity\s+(\d+)", lines[1]).group(1))
 
-        return Molecule(engine, name, M(atom=path, charge=q, spin=m - 1))
+        return Molecule(name, M(atom=path, charge=q, spin=m - 1))

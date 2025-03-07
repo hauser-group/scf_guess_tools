@@ -2,19 +2,18 @@ from __future__ import annotations
 
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
+from .engine import Engine
 from .matrix import Matrix
+from .molecule import Molecule
 from psi4.core import Wavefunction as Native
-from tempfile import TemporaryDirectory
 
 import os
 import psi4
 import re
-import scf_guess_tools.psi4.molecule as m
-import scf_guess_tools.psi4.engine as e
 
 
 def _hartree_fock(
-    molecule: m.Molecule, guess: str, basis: str, second_order: bool = False
+    molecule: Molecule, guess: str, basis: str, second_order: bool = False
 ) -> tuple[float, Native]:
     stability_analysis = "NONE"
     if not molecule.singlet:
@@ -141,9 +140,7 @@ class Wavefunction(Base):
         self._is_guess = serialized[2]
 
     @classmethod
-    def guess(
-        cls, engine: e.Engine, molecule: m.Molecule, basis: str, scheme: str
-    ) -> Wavefunction:
+    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         with clean_context():
             basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
@@ -160,16 +157,12 @@ class Wavefunction(Base):
             # We can't handle it here because this would cause a deviation in the density
 
             return Wavefunction(
-                start_wfn, True, engine, molecule, basis, scheme, converged=False
+                start_wfn, True, molecule, basis, scheme, converged=False
             )
 
     @classmethod
     def calculate(
-        cls,
-        engine: e.Engine,
-        molecule: m.Molecule,
-        basis: str,
-        guess: str | Wavefunction | None = None,
+        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
         guess = "AUTO" if guess is None else guess
         guess_str = guess
@@ -186,7 +179,7 @@ class Wavefunction(Base):
         def calculate():
             with clean_context():
                 _, wfn = _hartree_fock(molecule, guess_str, basis, retry)
-                iterations = _hartree_fock_iterations(engine.output_file)
+                iterations = _hartree_fock_iterations(Engine().output_file)
                 return wfn, iterations
 
         converged = True
@@ -205,7 +198,6 @@ class Wavefunction(Base):
         return Wavefunction(
             wfn,
             False,
-            engine,
             molecule,
             basis,
             guess,
