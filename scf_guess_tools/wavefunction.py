@@ -131,23 +131,6 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
         self._retried = retried
         self._converged = converged
 
-    def __eq__(self, other: Wavefunction) -> bool:
-        return (
-            self.molecule == other.molecule
-            and self.basis == other.basis
-            and self.initial == other.initial
-            and self.origin == other.origin
-            and self.time == other.time
-            and self.iterations == other.iterations
-            and self.retried == other.retried
-            and self.converged == other.converged
-            and self.S == other.S
-            and self.D == other.D
-            and self.F == other.F
-            and self.H == other.H
-            and np.isclose(self.energy, other.energy, rtol=1e-5, atol=1e-10)
-        )
-
     def __getstate__(self):
         return (
             self.molecule,

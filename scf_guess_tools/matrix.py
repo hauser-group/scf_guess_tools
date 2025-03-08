@@ -35,10 +35,6 @@ class Matrix(ABC):
         pass
 
     @abstractmethod
-    def __eq__(self, other: Matrix) -> bool:
-        pass
-
-    @abstractmethod
     def __add__(self, other: Matrix) -> Matrix:
         pass
 

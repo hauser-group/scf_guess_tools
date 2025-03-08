@@ -50,15 +50,6 @@ class Molecule(Builder, MoleculeBuilder, ABC):
     def geometry(self):
         pass
 
-    def __eq__(self, other: Molecule) -> bool:
-        return (
-            self.name == other.name
-            and self.charge == other.charge
-            and self.multiplicity == other.multiplicity
-            and self.atoms == other.atoms
-            and self.geometry == other.geometry
-        )
-
     @abstractmethod
     def __getstate__(self):
         pass
