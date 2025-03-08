@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from common import similar
 from provider import context, engine, path, basis
 from scf_guess_tools.common import tuplify

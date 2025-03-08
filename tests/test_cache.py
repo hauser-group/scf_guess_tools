@@ -1,5 +1,5 @@
 from common import equal, replace_random_digit
-from provider import engine, path, basis
+from provider import context, engine, path, basis
 from scf_guess_tools import Engine, PyEngine, PsiEngine
 
 import pytest

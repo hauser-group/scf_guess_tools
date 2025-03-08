@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from scf_guess_tools.common import tuplify
 from scf_guess_tools import Matrix, Molecule, Wavefunction
 from scf_guess_tools.psi4.matrix import Matrix as PsiMatrix

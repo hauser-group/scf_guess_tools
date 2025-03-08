@@ -1,4 +1,4 @@
-from provider import engine
+from provider import context, engine
 
 
 def test_singleton(engine):
