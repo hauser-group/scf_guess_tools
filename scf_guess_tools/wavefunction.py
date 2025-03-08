@@ -47,6 +47,14 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
         return self._time
 
     @property
+    def load_time(self) -> float | None:
+        return self._load_time
+
+    @load_time.setter
+    def load_time(self, load_time: float):
+        self._load_time = load_time
+
+    @property
     def iterations(self) -> int | None:
         return self._iterations
 
@@ -108,6 +116,7 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
         converged: bool | None = None,
     ):
         Builder.__init__(self)
+        self._load_time = None
 
         self._molecule = molecule
         self._basis = basis
