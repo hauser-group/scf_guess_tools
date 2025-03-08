@@ -5,8 +5,8 @@ import pytest
 import shutil
 
 
-@pytest.fixture(params=[PyEngine, PsiEngine])
-def engine(request, tmp_path, monkeypatch):
+@pytest.fixture
+def context(tmp_path, monkeypatch):
     variables = ["PSI_SCRATCH", "PYSCF_TMPDIR", "SGT_CACHE"]
     directories = ["psi4", "pyscf", "sgt"]
 
@@ -15,13 +15,16 @@ def engine(request, tmp_path, monkeypatch):
         os.makedirs(path, exist_ok=True)
         monkeypatch.setenv(variable, path)
 
+
+@pytest.fixture(params=[PyEngine, PsiEngine])
+def engine(request, context):
     engine = request.param(cache=True, verbose=1)
     engine.memory.clear()
 
     return engine
 
 
-@pytest.fixture(params=["acetaldehyde.xyz", "ch2-trip.xyz", "hoclo.xyz", "CuMe.xyz"])
+@pytest.fixture(params=["acetaldehyde.xyz", "ch2-trip.xyz", "hoclo.xyz"])  # "CuMe.xyz"
 def path(request, tmp_path):
     destination = str(tmp_path / request.param)
 

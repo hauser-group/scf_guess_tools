@@ -121,3 +121,78 @@ def equal(a, b, **kwargs) -> bool:
         return equal_wavefunctions(a, b, **kwargs)
 
     assert False, "non-matching types"
+
+
+def similar_matrices(
+    a: Matrix | tuple[Matrix, Matrix],
+    b: Matrix | tuple[Matrix, Matrix],
+    tolerance: float,
+) -> True:
+    a, b = tuplify(a), tuplify(b)
+
+    for lhs, rhs in zip(a, b):
+        trace = abs(lhs.trace / rhs.trace - 1.0)
+        if trace > tolerance:
+            print("not similar trace ", trace)
+            return False
+
+        purity = abs((lhs @ lhs).trace / (rhs @ rhs).trace - 1.0)
+        if purity > tolerance:
+            print("not similar purity ", purity)
+            return False
+
+    return True
+
+
+def similar_wavefunctions(
+    a: Wavefunction, b: Wavefunction, tolerance: float, ignore: list[str]
+) -> bool:
+    if not "molecule" in ignore and not equal_molecules(a.molecule, b.molecule):
+        print(f"Wavefunction.molecule differs for {a} and {b}")
+        return False
+
+    properties = ["basis", "origin", "time", "iterations", "retried", "converged"]
+
+    for property in properties:
+        if property in ignore:
+            continue
+
+        if getattr(a, property) != getattr(b, property):
+            print(f"Wavefunction.{property} differs for {a} and {b}")
+            return False
+
+    if not "initial" in ignore and not similar(
+        a.initial, b.initial, tolerance, ignore=ignore
+    ):
+        print(f"Wavefunction.initial not similar for {a} and {b}")
+        return False
+
+    for property in ["S", "D", "F", "H"]:
+        if property in ignore:
+            continue
+
+        lhs, rhs = tuplify(getattr(a, property)), tuplify(getattr(b, property))
+
+        for x, y in zip(lhs, rhs):
+            if not similar_matrices(x, y, tolerance * 1e3):
+                print(f"Wavefunction.{property} not similar for {a} and {b}")
+                return False
+
+    if not "energy" in ignore and not similar(a.energy, b.energy, tolerance * 1e3):
+        print(f"Wavefunction.energy not similar for {a} and {b}")
+        return False
+
+    return True
+
+
+def similar(a, b, tolerance: float = 1e-5, ignore: list[str] | None = None) -> bool:
+    ignore = ignore or []
+
+    if isinstance(a, Matrix) and isinstance(b, Matrix):
+        return similar_matrices(a, b, tolerance, ignore=ignore)
+    elif isinstance(a, Wavefunction) and isinstance(b, Wavefunction):
+        return similar_wavefunctions(a, b, tolerance, ignore=ignore)
+    elif isinstance(a, str) and isinstance(b, str):
+        return a == b
+
+    return abs(a / b - 1.0) < tolerance
