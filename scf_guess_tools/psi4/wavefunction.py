@@ -146,10 +146,13 @@ class Wavefunction(Base):
         return Engine(reinit_singleton=False)
 
     @classmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
-        with clean_context():
-            start = process_time()
+    def guess(
+        cls, molecule: Molecule, basis: str, scheme: str | None = None
+    ) -> Wavefunction:
+        start = process_time()
+        scheme = "AUTO" if scheme is None else scheme
 
+        with clean_context():
             basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
             start_wfn = psi4.driver.scf_wavefunction_factory(
@@ -163,6 +166,9 @@ class Wavefunction(Base):
 
             # Calling form_F doesn't deliver a correct fock matrix, so we handle it in self.F
             # We can't handle it here because this would cause a deviation in the density
+
+            # to_file() different after re-loading with from_file()
+            start_wfn = Native.from_file(start_wfn.to_file())
 
             end = process_time()
 

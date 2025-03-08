@@ -39,7 +39,7 @@ class Matrix(Base):
 
     def __eq__(self, other: Matrix) -> bool:
         for a, b in zip(self.native.nph, other.native.nph):
-            if not np.array_equal(a, b):
+            if not np.allclose(a, b, rtol=1e-5, atol=1e-10):
                 return False
 
         return True

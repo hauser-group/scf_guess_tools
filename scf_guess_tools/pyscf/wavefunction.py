@@ -63,7 +63,9 @@ class Wavefunction(Base):
         return Engine(reinit_singleton=False)
 
     @classmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
+    def guess(
+        cls, molecule: Molecule, basis: str, scheme: str | None = None
+    ) -> Wavefunction:
         start = process_time()
 
         molecule.native.basis = basis
@@ -71,6 +73,8 @@ class Wavefunction(Base):
 
         method = RHF if molecule.singlet else UHF
         solver = method(molecule.native)
+
+        scheme = solver.init_guess if scheme is None else scheme
 
         D = solver.get_init_guess(key=scheme)
         end = process_time()

@@ -13,8 +13,8 @@ def engine(request, tmp_path, monkeypatch):
 
     for variable, directory in zip(variables, directories):
         path = f"{tmp_path}/{directory}"
-        monkeypatch.setenv(variable, path)
         os.makedirs(path, exist_ok=True)
+        monkeypatch.setenv(variable, path)
 
     engine = request.param(cache=True, verbose=1)
     engine.memory.clear()
@@ -63,17 +63,20 @@ def test_molecule(engine: Engine, path: str):
 
 
 @pytest.mark.parametrize(
-    "engine, scheme",
+    "engine, builder, scheme",
     [
-        (engine, scheme)
+        (engine, builder, scheme)
         for engine in [PyEngine, PsiEngine]
-        for scheme in engine.guessing_schemes()
+        for builder in ["guess", "calculate"]
+        for scheme in [None, *engine.guessing_schemes()]
     ],
     indirect=["engine"],
 )
-def test_wavefunction(engine: Engine, path: str, scheme: str, basis: str):
+def test_wavefunction(engine: Engine, path: str, builder: str, scheme: str, basis: str):
+    engine.memory.clear()
     molecule = engine.load(path)
-    wavefunction = engine.calculate(molecule, basis, scheme)
+    function = getattr(engine, builder)
+    wavefunction = function(molecule, basis, scheme)
     invocations = 0
 
     @engine.memory.cache

@@ -11,19 +11,18 @@ import functools
 import os
 
 
-def _double_time(inner, outer, *outer_args, **outer_kwargs):
+def _nested_time(inner, outer, *outer_args, **outer_kwargs):
+    if getattr(inner, "__self__", None) is not None:
+        inner = inner.__func__
+
     @functools.wraps(outer)
     def outer_wrapper(*args, **kwargs):
-        @functools.wraps(inner)
-        def inner_wrapper(*args, **kwargs):
-            return inner(*args, **kwargs)
-
         start = process_time()
-        result = outer(inner_wrapper, *outer_args, **outer_kwargs)(*args, **kwargs)
+        result = outer(inner, *outer_args, **outer_kwargs)(*args, **kwargs)
         result.load_time = process_time() - start
-
         return result
 
+    setattr(outer_wrapper, "_double_time_inner", inner)
     return outer_wrapper
 
 
@@ -33,17 +32,26 @@ class Engine(MoleculeBuilder, WavefunctionBuilder, ABC, metaclass=Singleton):
     ):
         self._cached_properties = cached_properties or []
 
-        if cache:
+        if cache and getattr(self, "_memory", None) is None:
             directory = os.environ.get("SGT_CACHE")
 
             if directory is None:
                 raise RuntimeError("SGT_CACHE environment variable not set")
 
             self._memory = Memory(f"{directory}/{cache}", verbose=verbose)
-            self.guess = _double_time(self.guess, self._memory.cache)
-            self.calculate = _double_time(self.calculate, self._memory.cache)
-        else:
-            self._memory = None
+
+        for method in ["guess", "calculate"]:
+            cls = self.__class__
+            function = getattr(cls, method)
+            function = getattr(function, "_double_time_inner", function)
+
+            if getattr(function, "__self__", None) is not None:
+                function = function.__func__
+
+            if cache:
+                function = _nested_time(function, self._memory.cache)
+
+            setattr(cls, method, function)
 
     @property
     def memory(self) -> Memory:

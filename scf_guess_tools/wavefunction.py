@@ -5,11 +5,15 @@ from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 
 class WavefunctionBuilder(ABC):
     @classmethod
     @abstractmethod
-    def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
+    def guess(
+        cls, molecule: Molecule, basis: str, scheme: str | None = None
+    ) -> Wavefunction:
         pass
 
     @classmethod
@@ -141,7 +145,7 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
             and self.D == other.D
             and self.F == other.F
             and self.H == other.H
-            and self.energy == other.energy
+            and np.isclose(self.energy, other.energy, rtol=1e-5, atol=1e-10)
         )
 
     def __getstate__(self):
