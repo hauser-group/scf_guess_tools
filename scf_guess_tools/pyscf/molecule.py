@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..molecule import Molecule as Base
+from .engine import Engine
 from pyscf.gto import M, Mole as Native
 
 import os
@@ -42,6 +43,10 @@ class Molecule(Base):
     def __setstate__(self, serialized):
         self._name, q, m, atom = serialized
         self._native = M(atom=atom, charge=q, spin=m - 1)
+
+    @classmethod
+    def engine(cls) -> Engine:
+        return Engine(reinit_singleton=False)
 
     @classmethod
     def load(cls, path: str) -> Molecule:

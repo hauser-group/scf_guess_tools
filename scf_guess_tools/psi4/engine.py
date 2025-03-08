@@ -9,8 +9,8 @@ import psi4
 
 
 class Engine(Base):
-    def __init__(self, cache: bool = True, verbose: int = 0, **kwargs):
-        super().__init__(f"{self}" if cache else None, verbose)
+    def __init__(self, cache: bool = True, **kwargs):
+        super().__init__(f"{self}" if cache else None, **kwargs)
 
         directory = os.environ.get("PSI_SCRATCH")
 

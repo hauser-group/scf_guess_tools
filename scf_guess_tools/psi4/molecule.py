@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..molecule import Molecule as Base
+from .engine import Engine
 from psi4.core import Molecule as Native
 
 import os
@@ -42,6 +43,10 @@ class Molecule(Base):
         self._native = Native.from_string(
             serialized[1], name=serialized[0], dtype="psi4"
         )
+
+    @classmethod
+    def engine(cls) -> Engine:
+        return Engine(reinit_singleton=False)
 
     @classmethod
     def load(cls, path: str) -> Molecule:

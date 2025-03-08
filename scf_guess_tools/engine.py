@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .common import Singleton
+from .common import Singleton, double_time, single_time
 from .molecule import MoleculeBuilder
 from .wavefunction import WavefunctionBuilder
 from abc import ABC, abstractmethod
@@ -10,23 +10,30 @@ import os
 
 
 class Engine(MoleculeBuilder, WavefunctionBuilder, ABC, metaclass=Singleton):
-    def __init__(self, cache: str, verbose: int):
-        if cache is None:
-            return
+    def __init__(
+        self, cache: str, verbose: int = 0, cached_properties: list[str] | None = None
+    ):
+        self._cached_properties = cached_properties or []
 
-        directory = os.environ.get("SGT_CACHE")
+        if cache:
+            directory = os.environ.get("SGT_CACHE")
 
-        if directory is None:
-            raise RuntimeError("SGT_CACHE environment variable not set")
+            if directory is None:
+                raise RuntimeError("SGT_CACHE environment variable not set")
 
-        self._memory = Memory(directory, verbose=verbose)
-
-        self.guess = self._memory.cache(self.guess, ignore=["self"])
-        self.calculate = self._memory.cache(self.calculate, ignore=["self"])
+            self._memory = Memory(f"{directory}/{cache}", verbose=verbose)
+            self.guess = self._memory.cache(self.guess)
+            self.calculate = self._memory.cache(self.calculate)
+        else:
+            self._memory = None
 
     @property
     def memory(self) -> Memory:
         return self._memory
+
+    @property
+    def cached_properties(self) -> list[str]:
+        return self._cached_properties
 
     @classmethod
     @abstractmethod

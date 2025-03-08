@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .builder import Builder
 from abc import ABC, abstractmethod
 
 
@@ -10,7 +11,7 @@ class MoleculeBuilder(ABC):
         pass
 
 
-class Molecule(MoleculeBuilder, ABC):
+class Molecule(Builder, MoleculeBuilder, ABC):
     @property
     @abstractmethod
     def native(self):

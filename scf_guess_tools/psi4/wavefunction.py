@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from ..builder import builder_property
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
 from .engine import Engine
 from .matrix import Matrix
 from .molecule import Molecule
 from psi4.core import Wavefunction as Native
+from time import process_time
 
 import os
 import psi4
@@ -92,22 +94,22 @@ class Wavefunction(Base):
     def native(self) -> Native:
         return self._native
 
-    @property
+    @builder_property
     def S(self) -> Matrix:
         return Matrix(self._native.S())
 
-    @property
+    @builder_property
     def H(self) -> Matrix:
         return Matrix(self.native.H())
 
-    @property
+    @builder_property
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
             return Matrix(self._native.Da())
 
         return (Matrix(self._native.Da()), Matrix(self._native.Db()))
 
-    @property
+    @builder_property
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         native = self._native
 
@@ -140,8 +142,14 @@ class Wavefunction(Base):
         self._is_guess = serialized[2]
 
     @classmethod
+    def engine(cls) -> Engine:
+        return Engine(reinit_singleton=False)
+
+    @classmethod
     def guess(cls, molecule: Molecule, basis: str, scheme: str) -> Wavefunction:
         with clean_context():
+            start = process_time()
+
             basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
             start_wfn = psi4.driver.scf_wavefunction_factory(
@@ -156,14 +164,24 @@ class Wavefunction(Base):
             # Calling form_F doesn't deliver a correct fock matrix, so we handle it in self.F
             # We can't handle it here because this would cause a deviation in the density
 
+            end = process_time()
+
             return Wavefunction(
-                start_wfn, True, molecule, basis, scheme, converged=False
+                start_wfn,
+                True,
+                molecule=molecule,
+                basis=basis,
+                initial=scheme,
+                origin="guess",
+                time=end - start,
             )
 
     @classmethod
     def calculate(
         cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
+        start = process_time()
+
         guess = "AUTO" if guess is None else guess
         guess_str = guess
 
@@ -197,13 +215,17 @@ class Wavefunction(Base):
                 converged = False
                 wfn = e.wfn
 
+        end = process_time()
+
         return Wavefunction(
             wfn,
             False,
-            molecule,
-            basis,
-            guess,
-            iterations,
-            retry,
+            molecule=molecule,
+            basis=basis,
+            initial=guess,
+            origin="calculation",
+            time=end - start,
+            iterations=iterations,
+            retried=retry,
             converged=converged,
         )
