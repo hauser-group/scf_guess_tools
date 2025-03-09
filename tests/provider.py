@@ -1,8 +1,11 @@
+from molecules.properties import properties
+from pathlib import Path
 from scf_guess_tools import PyEngine, PsiEngine
 
 import os
 import pytest
 import shutil
+import random
 
 
 @pytest.fixture
@@ -24,16 +27,70 @@ def engine(request, context):
     return engine
 
 
-@pytest.fixture(params=["acetaldehyde.xyz", "ch2-trip.xyz", "hoclo.xyz"])  # "CuMe.xyz"
-def path(request, tmp_path):
-    destination = str(tmp_path / request.param)
+def basis_fixture(bases: list[str]):
+    @pytest.fixture(params=bases)
+    def basis(request):
+        return request.param
 
-    os.makedirs(os.path.dirname(destination), exist_ok=True)
-    shutil.copyfile(request.param, destination)
-
-    return destination
+    return basis
 
 
-@pytest.fixture(params=["sto-3g"])  # , "pcseg-0", "pcseg-1"])
-def basis(request):
-    return request.param
+def path_fixture(
+    paths: int,
+    charged: bool = None,
+    singlet: bool = None,
+    small: bool = None,
+    medium: bool = None,
+    large: bool = None,
+):
+    matches = []
+
+    for name, attributes in properties.items():
+        if charged == True and attributes["charge"] == 0:
+            continue
+
+        if charged == False and attributes["charge"] != 0:
+            continue
+
+        if singlet == True and attributes["multiplicity"] != 1:
+            continue
+
+        if singlet == False and attributes["multiplicity"] == 1:
+            continue
+
+        if small == True and attributes["atoms"] >= 10:
+            continue
+
+        if small == False and attributes["atoms"] < 10:
+            continue
+
+        if medium == True and (attributes["atoms"] < 10 or attributes["atoms"] > 30):
+            continue
+
+        if medium == False and (
+            attributes["atoms"] >= 10 and attributes["atoms"] <= 30
+        ):
+            continue
+
+        if large == True and attributes["atoms"] <= 30:
+            continue
+
+        if large == False and attributes["atoms"] > 30:
+            continue
+
+        matches.append(name)
+
+    random.seed(42)
+    matches = random.sample(matches, min(paths, len(matches)))
+
+    @pytest.fixture(params=matches)
+    def path(request, tmp_path):
+        source = (
+            Path(__file__).parent / "molecules" / "geometries" / f"{request.param}.xyz"
+        )
+        destination = f"{tmp_path}/{request.param}.xyz"
+
+        shutil.copyfile(source, destination)
+        return destination
+
+    return path

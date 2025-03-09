@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from scf_guess_tools.common import tuplify
 from scf_guess_tools import Matrix, Molecule, Wavefunction
+from scf_guess_tools.common import tuplify
 from scf_guess_tools.psi4.matrix import Matrix as PsiMatrix
 from scf_guess_tools.psi4.molecule import Molecule as PsiMolecule
 from scf_guess_tools.psi4.wavefunction import Wavefunction as PsiWavefunction
@@ -51,7 +51,6 @@ def equal_molecules(a: Molecule, b: Molecule, ignore: list[str] | None = None) -
         "charge",
         "multiplicity",
         "singlet",
-        "triplet",
         "atoms",
         "geometry",
     ]

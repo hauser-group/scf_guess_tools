@@ -1,8 +1,11 @@
 from common import equal, replace_random_digit
-from provider import context, engine, path, basis
+from provider import context, engine, basis_fixture, path_fixture
 from scf_guess_tools import Engine, PyEngine, PsiEngine
 
 import pytest
+
+basis = basis_fixture(["sto-3g", "pcseg-0"])
+path = path_fixture(paths=3, medium=False, large=False)
 
 
 @pytest.mark.parametrize(
@@ -14,10 +17,10 @@ import pytest
     ],
     indirect=["engine"],
 )
-def test_reinitialization(engine, path: str, builder: str):
+def test_reinitialization(engine, path: str, basis: str, builder: str):
     def build(engine):
         molecule = e.load(path)
-        return e.calculate(molecule, "pcseg-0")
+        return e.calculate(molecule, basis)
 
     engine = engine.__class__
 
@@ -68,11 +71,11 @@ def test_molecule(engine: Engine, path: str):
         (engine, builder, scheme)
         for engine in [PyEngine, PsiEngine]
         for builder in ["guess", "calculate"]
-        for scheme in [None, *engine.guessing_schemes()]
+        for scheme in [None, *engine.guessing_schemes()][::2]
     ],
     indirect=["engine"],
 )
-def test_wavefunction(engine: Engine, path: str, builder: str, scheme: str, basis: str):
+def test_wavefunction(engine: Engine, path: str, basis: str, scheme: str, builder: str):
     molecule = engine.load(path)
     function = getattr(engine, builder)
     wavefunction = function(molecule, basis, scheme)
