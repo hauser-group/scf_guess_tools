@@ -1,0 +1,7 @@
+5
+molecule "ketene" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.00000       -1.21291
+H          0.00000        0.94166       -1.73601
+H          0.00000       -0.94166       -1.73601
+C          0.00000        0.00000        0.10312
+O          0.00000        0.00000        1.26634

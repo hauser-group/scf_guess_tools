@@ -1,0 +1,6 @@
+4
+molecule "t-hooo" dataset "non-multireference W4-17" charge 0 multiplicity 2
+O          1.17439        0.19431        0.00000
+O          0.00000        0.55318        0.00000
+O         -0.95047       -0.71771        0.00000
+H         -1.79137       -0.23823        0.00000

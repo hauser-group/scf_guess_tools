@@ -1,0 +1,6 @@
+4
+molecule "hcof" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.39753        0.00000
+O          1.14707        0.12048        0.00000
+H         -0.44583        1.39376        0.00000
+F         -0.97008       -0.52698        0.00000

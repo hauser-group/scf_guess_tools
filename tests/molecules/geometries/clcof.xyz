@@ -1,0 +1,6 @@
+4
+molecule "clcof" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.50334        0.00000
+O         -0.80399        1.36076        0.00000
+F          1.30741        0.71196        0.00000
+Cl        -0.31381       -1.19493        0.00000

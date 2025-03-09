@@ -1,0 +1,6 @@
+4
+molecule "nh2cl" dataset "non-multireference W4-17" charge 0 multiplicity 1
+N         -0.04358        1.12613        0.00000
+H          0.52299        1.36575        0.80862
+H          0.52299        1.36575       -0.80862
+Cl        -0.04358       -0.62438        0.00000

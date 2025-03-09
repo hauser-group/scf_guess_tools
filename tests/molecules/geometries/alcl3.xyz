@@ -1,0 +1,6 @@
+4
+molecule "alcl3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+Al         0.00000        0.00000        0.00000
+Cl         0.00000        0.00000        2.07097
+Cl         0.00000        1.79351       -1.03548
+Cl         0.00000       -1.79351       -1.03548

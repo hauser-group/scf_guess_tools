@@ -1,0 +1,6 @@
+4
+molecule "hooh" dataset "non-multireference W4-17" charge 0 multiplicity 1
+H          0.78828        0.89194        0.46861
+O          0.00000        0.72624       -0.05858
+O          0.00000       -0.72624       -0.05858
+H         -0.78828       -0.89194        0.46861

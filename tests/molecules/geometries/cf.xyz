@@ -1,0 +1,4 @@
+2
+molecule "cf" dataset "non-multireference W4-17" charge 0 multiplicity 2
+C          0.00000        0.00000       -0.76485
+F          0.00000        0.00000        0.50990

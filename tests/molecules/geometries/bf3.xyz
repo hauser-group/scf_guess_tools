@@ -1,0 +1,6 @@
+4
+molecule "bf3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+B          0.00000        0.00000        0.00000
+F          0.00000        0.00000        1.31030
+F          0.00000        1.13475       -0.65515
+F          0.00000       -1.13475       -0.65515

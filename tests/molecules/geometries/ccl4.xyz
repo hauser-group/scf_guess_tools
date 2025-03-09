@@ -1,0 +1,7 @@
+5
+molecule "ccl4" dataset "non-multireference W4-17" charge 0 multiplicity 1
+Cl         1.02064        1.02064        1.02064
+C          0.00000        0.00000        0.00000
+Cl        -1.02064       -1.02064        1.02064
+Cl        -1.02064        1.02064       -1.02064
+Cl         1.02064       -1.02064       -1.02064

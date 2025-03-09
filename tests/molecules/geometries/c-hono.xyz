@@ -1,0 +1,6 @@
+4
+molecule "c-hono" dataset "non-multireference W4-17" charge 0 multiplicity 1
+O          1.08319        0.07113        0.00000
+N          0.00000        0.54944        0.00000
+O         -1.01444       -0.39532        0.00000
+H         -0.55000       -1.25255        0.00000

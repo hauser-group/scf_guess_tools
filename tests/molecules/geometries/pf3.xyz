@@ -1,0 +1,6 @@
+4
+molecule "pf3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+P          0.49851        0.00000        0.00000
+F         -0.27695        1.36063        0.00000
+F         -0.27695       -0.68031        1.17834
+F         -0.27695       -0.68031       -1.17834

@@ -1,0 +1,4 @@
+2
+molecule "hcl" dataset "non-multireference W4-17" charge 0 multiplicity 1
+Cl         0.00000        0.00000        0.07087
+H          0.00000        0.00000       -1.20474

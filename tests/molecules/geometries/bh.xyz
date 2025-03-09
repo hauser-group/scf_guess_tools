@@ -1,0 +1,4 @@
+2
+molecule "bh" dataset "non-multireference W4-17" charge 0 multiplicity 1
+B          0.00000        0.00000        0.20554
+H          0.00000        0.00000       -1.02771

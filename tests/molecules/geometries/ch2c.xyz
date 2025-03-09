@@ -1,0 +1,6 @@
+4
+molecule "ch2c" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.00000        0.82200
+C          0.00000        0.00000       -0.48077
+H          0.00000        0.94039       -1.02370
+H          0.00000       -0.94039       -1.02370

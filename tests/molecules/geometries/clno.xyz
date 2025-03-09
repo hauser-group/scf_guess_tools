@@ -1,0 +1,5 @@
+3
+molecule "clno" dataset "non-multireference W4-17" charge 0 multiplicity 1
+Cl        -0.53046       -0.92844        0.00000
+N          0.00000        0.97063        0.00000
+O          1.12723        1.12364        0.00000

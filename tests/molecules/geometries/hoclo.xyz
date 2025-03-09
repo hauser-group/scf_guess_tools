@@ -1,0 +1,6 @@
+4
+molecule "hoclo" dataset "non-multireference W4-17" charge 0 multiplicity 1
+H          1.54946        0.64417        0.77379
+O          1.36929        0.31868       -0.11921
+Cl        -0.13756       -0.44371        0.01741
+O         -1.27066        0.54368       -0.01452
