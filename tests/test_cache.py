@@ -99,3 +99,25 @@ def test_wavefunction(engine: Engine, path: str, basis: str, scheme: str, builde
     ), "properties of wavefunction must not change"
 
     assert invocations == 1, "function must not be invoked for cached wavefunction"
+
+
+@pytest.mark.parametrize("builder", ["guess", "calculate"])
+def test_time(engine: Engine, path: str, builder: str):
+    molecule = engine.load(path)
+    function = getattr(engine, builder)
+    wavefunction = function(molecule, "pcseg-0")
+
+    assert (
+        wavefunction.time <= wavefunction.load_time
+    ), "cached invocation must take longer than actual wavefunction calculation"
+
+    engine = engine.__class__(cache=False, verbose=1)
+    molecule = engine.load(path)
+    function = getattr(engine, builder)
+    wavefunction = function(molecule, "pcseg-0")
+
+    assert wavefunction.time > 0.0, "wavefunction building must take some time"
+
+    assert (
+        wavefunction.load_time is None
+    ), "non-cached wavefunction building must not have loading time"
