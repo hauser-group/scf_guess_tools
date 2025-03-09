@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from molecules.properties import properties
 from pathlib import Path
 from scf_guess_tools import PyEngine, PsiEngine

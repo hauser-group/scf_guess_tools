@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from common import equal, replace_random_digit
 from provider import context, engine, basis_fixture, path_fixture
 from scf_guess_tools import (
