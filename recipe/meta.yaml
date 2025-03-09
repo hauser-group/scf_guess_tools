@@ -27,6 +27,7 @@ test:
   requires:
     - pytest
   source_files:
+    - Makefile
     - tests
   commands:
     - make test
