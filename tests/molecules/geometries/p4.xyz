@@ -1,0 +1,6 @@
+4
+molecule "p4" dataset "non-multireference W4-17" charge 0 multiplicity 1
+P          0.77738        0.77738        0.77738
+P         -0.77738       -0.77738        0.77738
+P         -0.77738        0.77738       -0.77738
+P          0.77738       -0.77738       -0.77738

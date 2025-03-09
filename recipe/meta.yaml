@@ -27,9 +27,10 @@ test:
   requires:
     - pytest
   source_files:
+    - Makefile
     - tests
   commands:
-    - cd tests && pytest .
+    - make test
 
 about:
   home: https://github.com/hauser-group/scf_guess_tools

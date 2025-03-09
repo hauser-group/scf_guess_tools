@@ -33,9 +33,6 @@ class Matrix(Base):
     def __repr__(self) -> str:
         return self.native.__repr__()
 
-    def __eq__(self, other: Matrix) -> bool:
-        return np.array_equal(self.native, other.native)
-
     def __add__(self, other: Matrix) -> Matrix:
         return Matrix(self.native.__add__(other.native))
 

@@ -1,0 +1,5 @@
+3
+molecule "hof" dataset "non-multireference W4-17" charge 0 multiplicity 1
+H         -0.90439        0.84094        0.00000
+O          0.05320        0.71011        0.00000
+F          0.05320       -0.72464        0.00000

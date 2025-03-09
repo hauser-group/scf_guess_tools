@@ -1,0 +1,6 @@
+4
+molecule "nh2f" dataset "non-multireference W4-17" charge 0 multiplicity 1
+N         -0.06535        0.69022        0.00000
+H          0.52280        0.88966        0.80712
+H          0.52280        0.88966       -0.80712
+F         -0.06535       -0.73454        0.00000

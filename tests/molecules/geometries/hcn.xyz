@@ -1,0 +1,5 @@
+3
+molecule "hcn" dataset "non-multireference W4-17" charge 0 multiplicity 1
+H          0.00000        0.00000       -1.56880
+C          0.00000        0.00000       -0.50200
+N          0.00000        0.00000        0.65440

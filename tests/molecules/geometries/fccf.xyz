@@ -1,0 +1,6 @@
+4
+molecule "fccf" dataset "non-multireference W4-17" charge 0 multiplicity 1
+F          0.00000        0.00000        1.88046
+C          0.00000        0.00000        0.59458
+C          0.00000        0.00000       -0.59458
+F          0.00000        0.00000       -1.88046

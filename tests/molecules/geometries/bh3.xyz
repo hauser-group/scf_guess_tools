@@ -1,0 +1,6 @@
+4
+molecule "bh3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+B          0.00000        0.00000        0.00000
+H          0.00000        0.00000        1.18990
+H          0.00000        1.03048       -0.59495
+H          0.00000       -1.03048       -0.59495

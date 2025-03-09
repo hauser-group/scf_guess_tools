@@ -1,0 +1,4 @@
+2
+molecule "sif" dataset "non-multireference W4-17" charge 0 multiplicity 2
+F          0.00000        0.00000       -0.97862
+Si         0.00000        0.00000        0.62911

@@ -1,0 +1,4 @@
+2
+molecule "hs" dataset "non-multireference W4-17" charge 0 multiplicity 2
+S          0.00000        0.00000        0.07898
+H          0.00000        0.00000       -1.26360

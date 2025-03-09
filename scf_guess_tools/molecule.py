@@ -37,10 +37,6 @@ class Molecule(Builder, MoleculeBuilder, ABC):
         return self.multiplicity == 1
 
     @property
-    def triplet(self) -> bool:
-        return self.multiplicity == 3
-
-    @property
     @abstractmethod
     def atoms(self) -> int:
         pass
@@ -49,15 +45,6 @@ class Molecule(Builder, MoleculeBuilder, ABC):
     @abstractmethod
     def geometry(self):
         pass
-
-    def __eq__(self, other: Molecule) -> bool:
-        return (
-            self.name == other.name
-            and self.charge == other.charge
-            and self.multiplicity == other.multiplicity
-            and self.atoms == other.atoms
-            and self.geometry == other.geometry
-        )
 
     @abstractmethod
     def __getstate__(self):

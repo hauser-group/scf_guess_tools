@@ -1,0 +1,7 @@
+5
+molecule "cf2cl2" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.00000        0.33738
+Cl         0.00000        1.45391       -0.65229
+Cl         0.00000       -1.45391       -0.65229
+F          1.07497        0.00000        1.11964
+F         -1.07497        0.00000        1.11964

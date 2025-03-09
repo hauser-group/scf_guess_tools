@@ -1,0 +1,5 @@
+3
+molecule "fno" dataset "non-multireference W4-17" charge 0 multiplicity 1
+F         -0.95304       -0.60244        0.00000
+N          0.00000        0.56126        0.00000
+O          1.07217        0.18665        0.00000

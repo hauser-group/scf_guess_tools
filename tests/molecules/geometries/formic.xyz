@@ -1,0 +1,7 @@
+5
+molecule "formic" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.42194        0.00000
+H         -0.37430        1.44967        0.00000
+O          1.15795        0.10882        0.00000
+O         -1.03035       -0.44050        0.00000
+H         -0.64653       -1.32795        0.00000

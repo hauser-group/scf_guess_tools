@@ -1,0 +1,5 @@
+3
+molecule "hoo" dataset "non-multireference W4-17" charge 0 multiplicity 2
+O          0.05533        0.71829        0.00000
+O          0.05533       -0.61198        0.00000
+H         -0.88526       -0.85047        0.00000

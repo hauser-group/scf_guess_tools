@@ -1,0 +1,6 @@
+4
+molecule "h2co" dataset "non-multireference W4-17" charge 0 multiplicity 1
+O          0.00000        0.00000        0.67586
+C          0.00000        0.00000       -0.53074
+H          0.00000        0.93695       -1.11122
+H          0.00000       -0.93695       -1.11122
