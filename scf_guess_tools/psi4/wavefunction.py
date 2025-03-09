@@ -208,8 +208,7 @@ class Wavefunction(Base):
                 )
                 return wfn, iterations
 
-        converged = True
-        retry = False
+        iterations, retry, converged = None, False, True
 
         try:
             wfn, iterations = calculate()

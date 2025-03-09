@@ -37,10 +37,6 @@ class Molecule(Builder, MoleculeBuilder, ABC):
         return self.multiplicity == 1
 
     @property
-    def triplet(self) -> bool:
-        return self.multiplicity == 3
-
-    @property
     @abstractmethod
     def atoms(self) -> int:
         pass
