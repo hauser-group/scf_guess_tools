@@ -1,6 +1,14 @@
 from common import equal, replace_random_digit
 from provider import context, engine, basis_fixture, path_fixture
-from scf_guess_tools import Engine, PyEngine, PsiEngine
+from scf_guess_tools import (
+    Engine,
+    PyEngine,
+    PsiEngine,
+    Metric,
+    FScore,
+    DIISError,
+    EnergyError,
+)
 
 import pytest
 
@@ -121,3 +129,15 @@ def test_time(engine: Engine, path: str, builder: str):
     assert (
         wavefunction.load_time is None
     ), "non-cached wavefunction building must not have loading time"
+
+
+@pytest.mark.parametrize("metric", [FScore, EnergyError])
+def test_metric(engine: Engine, path: str, metric: Metric):
+    molecule = engine.load(path)
+    initial = engine.guess(molecule, "pcseg-0")
+    final = engine.calculate(molecule, "pcseg-0")
+
+    m = metric(initial)
+
+    assert m.final.time == final.time, "cached wavefunction must have same build time"
+    assert m.final.load_time is not None, "cached wavefunction must have load time"
