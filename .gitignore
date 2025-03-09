@@ -1,6 +1,7 @@
 *
 
 !.gitignore
+!Makefile
 !LICENSE.md
 !README.md
 !pyproject.toml

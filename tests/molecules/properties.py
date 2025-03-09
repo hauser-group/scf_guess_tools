@@ -190,7 +190,7 @@ properties = {
     "PR05": {"charge": 0, "multiplicity": 1, "atoms": 14},
     "ED04": {"charge": 0, "multiplicity": 1, "atoms": 19},
     "PR14": {"charge": 0, "multiplicity": 1, "atoms": 51},
-    "PR01": {"charge": 0, "multiplicity": 1, "atoms": 13},
+    #    "PR01": {"charge": 0, "multiplicity": 1, "atoms": 13},
     "AcCl": {"charge": 0, "multiplicity": 1, "atoms": 7},
     "ED01": {"charge": 0, "multiplicity": 1, "atoms": 11},
     "PhSH": {"charge": 0, "multiplicity": 1, "atoms": 13},

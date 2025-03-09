@@ -19,13 +19,13 @@ import pytest
 py_schemes = ["minao", "1e", "atom", "huckel", "vsap"]
 psi_schemes = ["CORE", "SAD", "GWH", "HUCKEL", "SAP"]
 
-guess_basis = basis_fixture(["sto-3g", "pcseg-0", "pcseg-2"])
+guess_basis = basis_fixture(["sto-3g", "pcseg-1"])
 guess_path = path_fixture(paths=10)
 
 calculate_basis = basis_fixture(["pcseg-1"])
 calculate_path = path_fixture(paths=5, large=False)
 
-metric_basis = basis_fixture(["sto-3g", "pcseg-1"])
+metric_basis = basis_fixture(["sto-3g", "pcseg-0"])
 metric_path = path_fixture(paths=5, large=False)
 
 

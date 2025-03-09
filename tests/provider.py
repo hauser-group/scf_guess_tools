@@ -9,22 +9,48 @@ import random
 
 
 @pytest.fixture
-def context(tmp_path, monkeypatch):
-    variables = ["PSI_SCRATCH", "PYSCF_TMPDIR", "SGT_CACHE"]
-    directories = ["psi4", "pyscf", "sgt"]
+def context():
+    directories = [
+        os.environ.get(variable)
+        for variable in ["PSI_SCRATCH", "PYSCF_TMPDIR", "SGT_CACHE"]
+    ]
 
-    for variable, directory in zip(variables, directories):
-        path = f"{tmp_path}/{directory}"
-        os.makedirs(path, exist_ok=True)
-        monkeypatch.setenv(variable, path)
+    for directory in directories:
+        try:
+            shutil.rmtree(f"{directory}.pytest-bak")
+        except:
+            pass
+
+        try:
+            shutil.move(directory, f"{directory}.pytest-bak")
+        except:
+            pass
+        finally:
+            os.makedirs(directory, exist_ok=True)
+
+    try:
+        yield
+    finally:
+        for directory in directories:
+            try:
+                shutil.rmtree(directory)
+            except:
+                pass
+
+            try:
+                shutil.move(f"{directory}.pytest-bak", directory)
+            except:
+                pass
 
 
 @pytest.fixture(params=[PyEngine, PsiEngine])
 def engine(request, context):
     engine = request.param(cache=True, verbose=1)
-    engine.memory.clear()
 
-    return engine
+    try:
+        engine.memory.clear()
+    finally:
+        return engine
 
 
 def basis_fixture(bases: list[str]):
