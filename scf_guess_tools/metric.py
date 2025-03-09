@@ -17,8 +17,6 @@ class Metric(ABC):
         self._initial = initial
         self._final = final
 
-        print(self.initial, self.final)
-
         if enforce_final and final is None:
             calculate = initial.__class__.engine().calculate
             self._final = calculate(initial.molecule, initial.basis)
