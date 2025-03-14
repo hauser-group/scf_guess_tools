@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..builder import builder_property
+from ..common import timeable, tuplifyable
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
 from .core import Object, output_file
@@ -19,22 +19,24 @@ class Wavefunction(Base, Object):
     def native(self) -> Native:
         return self._native
 
-    @builder_property
+    @timeable
     def S(self) -> Matrix:
         return Matrix(self._native.S())
 
-    @builder_property
+    @timeable
     def H(self) -> Matrix:
         return Matrix(self.native.H())
 
-    @builder_property
+    @timeable
+    @tuplifyable
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
             return Matrix(self._native.Da())
 
         return (Matrix(self._native.Da()), Matrix(self._native.Db()))
 
-    @builder_property
+    @timeable
+    @tuplifyable
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         native = self._native
 

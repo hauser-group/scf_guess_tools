@@ -33,14 +33,14 @@ class Matrix(Base, Object):
     def __init__(self, native: Native):
         self._native = native
 
+    def __repr__(self) -> str:
+        return "\n".join([irrep.__repr__() for irrep in self.native.nph])
+
     def __getstate__(self):
         raise NotImplementedError()
 
     def __setstate__(self, serialized):
         raise NotImplementedError()
-
-    def __repr__(self) -> str:
-        return "\n".join([irrep.__repr__() for irrep in self.native.nph])
 
     def __add__(self, other: Matrix) -> Matrix:
         result = self.native.clone()

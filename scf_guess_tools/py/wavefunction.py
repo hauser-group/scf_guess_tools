@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from .core import Object, guessing_schemes
-from ..builder import builder_property
+
+from ..common import timeable, tuplifyable
 from ..wavefunction import Wavefunction as Base
+from .core import Object, guessing_schemes
 from .matrix import Matrix
 from .molecule import Molecule
 from numpy.typing import NDArray
@@ -16,22 +17,24 @@ class Wavefunction(Base, Object):
     def native(self) -> Native:
         return self._native
 
-    @builder_property
+    @timeable
     def S(self) -> Matrix:
         return Matrix(self._native.get_ovlp())
 
-    @builder_property
+    @timeable
     def H(self) -> Matrix:
         return Matrix(self.native.get_hcore())
 
-    @builder_property
+    @timeable
+    @tuplifyable
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
             return Matrix(self._D / 2)
 
         return Matrix(self._D[0]), Matrix(self._D[1])
 
-    @builder_property
+    @timeable
+    @tuplifyable
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         F = self._native.get_fock(dm=self._D)
 

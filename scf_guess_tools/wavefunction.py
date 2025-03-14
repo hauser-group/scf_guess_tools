@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from .common import timeable, tuplifyable
 from .core import Object
-from .builder import builder_property
 from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
@@ -47,27 +47,30 @@ class Wavefunction(Object, ABC):
     def converged(self) -> bool | None:
         return self._converged
 
-    @builder_property
     @abstractmethod
+    @timeable
     def S(self) -> Matrix:
         pass
 
-    @builder_property
     @abstractmethod
+    @timeable
     def H(self) -> Matrix:
         pass
 
-    @builder_property
     @abstractmethod
+    @timeable
+    @tuplifyable
     def D(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
-    @builder_property
     @abstractmethod
+    @timeable
+    @tuplifyable
     def F(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
-    @builder_property
+    @timeable
+    @tuplifyable
     def energy(self) -> float:  # TODO check for memory inefficiencies
         if self.molecule.singlet:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
