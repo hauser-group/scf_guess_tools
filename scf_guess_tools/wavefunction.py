@@ -6,8 +6,6 @@ from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
 
-import numpy as np
-
 
 class Wavefunction(Object, ABC):
     @property
@@ -69,26 +67,31 @@ class Wavefunction(Object, ABC):
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
-    @timeable
     @tuplifyable
-    def electronic_energy(self) -> float:  # TODO check for memory inefficiencies
+    def electronic_energy(
+        self,
+        core_hamiltonian: Matrix | None = None,
+        density: Matrix | tuple[Matrix, Matrix] = None,
+        fock: Matrix | tuple[Matrix, Matrix] | None = None,
+    ) -> float:  # TODO check for memory inefficiencies
+        H = self.core_hamiltonian() if core_hamiltonian is None else core_hamiltonian
+        D = self.density() if density is None else density
+        F = self.fock() if fock is None else fock
+
         if self.molecule.singlet:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
 
-            result = self.fock + self.core_hamiltonian
-            result = result @ self.density
+            result = F + H
+            result = result @ D
 
             return result.trace
         else:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3c_unrestricted-hartree-fock.ipynb
 
-            Da, Db = self.density
-            Fa, Fb = self.fock
+            Da, Db = D
+            Fa, Fb = F
 
-            terms = [
-                (a @ b).trace
-                for a, b in zip([Da + Db, Da, Db], [self.core_hamiltonian, Fa, Fb])
-            ]
+            terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [H, Fa, Fb])]
             return 0.5 * sum(terms)
 
     def __init__(
