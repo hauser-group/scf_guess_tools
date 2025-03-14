@@ -76,6 +76,7 @@ class Wavefunction(Base, Object):
         scheme = "AUTO" if scheme is None else scheme
 
         with clean_context():
+            psi4.set_options({"BASIS": basis, "GUESS": scheme})
             basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
             start_wfn = psi4.driver.scf_wavefunction_factory(
