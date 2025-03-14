@@ -49,43 +49,46 @@ class Wavefunction(Object, ABC):
 
     @abstractmethod
     @timeable
-    def S(self) -> Matrix:
+    def overlap(self) -> Matrix:
         pass
 
     @abstractmethod
     @timeable
-    def H(self) -> Matrix:
-        pass
-
-    @abstractmethod
-    @timeable
-    @tuplifyable
-    def D(self) -> Matrix | tuple[Matrix, Matrix]:
+    def core_hamiltonian(self) -> Matrix:
         pass
 
     @abstractmethod
     @timeable
     @tuplifyable
-    def F(self) -> Matrix | tuple[Matrix, Matrix]:
+    def density(self) -> Matrix | tuple[Matrix, Matrix]:
+        pass
+
+    @abstractmethod
+    @timeable
+    @tuplifyable
+    def fock(self) -> Matrix | tuple[Matrix, Matrix]:
         pass
 
     @timeable
     @tuplifyable
-    def energy(self) -> float:  # TODO check for memory inefficiencies
+    def electronic_energy(self) -> float:  # TODO check for memory inefficiencies
         if self.molecule.singlet:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
 
-            result = self.F + self.H
-            result = result @ self.D
+            result = self.fock + self.core_hamiltonian
+            result = result @ self.density
 
             return result.trace
         else:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3c_unrestricted-hartree-fock.ipynb
 
-            Da, Db = self.D
-            Fa, Fb = self.F
+            Da, Db = self.density
+            Fa, Fb = self.fock
 
-            terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [self.H, Fa, Fb])]
+            terms = [
+                (a @ b).trace
+                for a, b in zip([Da + Db, Da, Db], [self.core_hamiltonian, Fa, Fb])
+            ]
             return 0.5 * sum(terms)
 
     def __init__(

@@ -20,16 +20,16 @@ class Wavefunction(Base, Object):
         return self._native
 
     @timeable
-    def S(self) -> Matrix:
+    def overlap(self) -> Matrix:
         return Matrix(self._native.S())
 
     @timeable
-    def H(self) -> Matrix:
+    def core_hamiltonian(self) -> Matrix:
         return Matrix(self.native.H())
 
     @timeable
     @tuplifyable
-    def D(self) -> Matrix | tuple[Matrix, Matrix]:
+    def density(self) -> Matrix | tuple[Matrix, Matrix]:
         if self.molecule.singlet:
             return Matrix(self._native.Da())
 
@@ -37,7 +37,7 @@ class Wavefunction(Base, Object):
 
     @timeable
     @tuplifyable
-    def F(self) -> Matrix | tuple[Matrix, Matrix]:
+    def fock(self) -> Matrix | tuple[Matrix, Matrix]:
         native = self._native
 
         if self._is_guess:
