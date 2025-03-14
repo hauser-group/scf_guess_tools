@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from .core import Object, guessing_schemes
 from ..builder import builder_property
 from ..wavefunction import Wavefunction as Base
-from .engine import Engine
 from .matrix import Matrix
 from .molecule import Molecule
 from numpy.typing import NDArray
@@ -11,7 +11,7 @@ from pyscf.scf.hf import SCF as Native
 from time import process_time
 
 
-class Wavefunction(Base):
+class Wavefunction(Base, Object):
     @property
     def native(self) -> Native:
         return self._native
@@ -59,10 +59,6 @@ class Wavefunction(Base):
         self._native = method(self._molecule.native)
 
     @classmethod
-    def engine(cls) -> Engine:
-        return Engine(reinit_singleton=False)
-
-    @classmethod
     def guess(
         cls, molecule: Molecule, basis: str, scheme: str | None = None
     ) -> Wavefunction:
@@ -104,7 +100,7 @@ class Wavefunction(Base):
         guess = solver.init_guess if guess is None else guess
 
         if isinstance(guess, str):
-            assert guess in Engine(reinit_singleton=False).guessing_schemes()
+            assert guess in guessing_schemes
             solver.run(init_guess=guess)
         else:
             solver.kernel(dm0=guess._D)

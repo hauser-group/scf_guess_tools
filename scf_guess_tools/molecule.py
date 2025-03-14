@@ -1,17 +1,10 @@
 from __future__ import annotations
 
-from .builder import Builder
+from .core import Object
 from abc import ABC, abstractmethod
 
 
-class MoleculeBuilder(ABC):
-    @classmethod
-    @abstractmethod
-    def load(cls, path: str) -> Molecule:
-        pass
-
-
-class Molecule(Builder, MoleculeBuilder, ABC):
+class Molecule(Object, ABC):
     @property
     @abstractmethod
     def native(self):
@@ -44,12 +37,4 @@ class Molecule(Builder, MoleculeBuilder, ABC):
     @property
     @abstractmethod
     def geometry(self):
-        pass
-
-    @abstractmethod
-    def __getstate__(self):
-        pass
-
-    @abstractmethod
-    def __setstate__(self, serialized):
         pass

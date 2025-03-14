@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from ..matrix import Matrix as Base
-from psi4.core import Matrix as Native, doublet
+from .core import Object
 from numpy.typing import NDArray
+from psi4.core import Matrix as Native, doublet
 
-import numpy as np
 
-
-class Matrix(Base):
+class Matrix(Base, Object):
     @property
     def native(self) -> Native:
         return self._native
@@ -33,6 +32,12 @@ class Matrix(Base):
 
     def __init__(self, native: Native):
         self._native = native
+
+    def __getstate__(self):
+        raise NotImplementedError()
+
+    def __setstate__(self, serialized):
+        raise NotImplementedError()
 
     def __repr__(self) -> str:
         return "\n".join([irrep.__repr__() for irrep in self.native.nph])

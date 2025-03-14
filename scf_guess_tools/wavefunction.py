@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from .builder import Builder, builder_property
+from .core import Object
+from .builder import builder_property
 from .matrix import Matrix
 from .molecule import Molecule
 from abc import ABC, abstractmethod
@@ -8,23 +9,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 
-class WavefunctionBuilder(ABC):
-    @classmethod
-    @abstractmethod
-    def guess(
-        cls, molecule: Molecule, basis: str, scheme: str | None = None
-    ) -> Wavefunction:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
-    ) -> Wavefunction:
-        pass
-
-
-class Wavefunction(Builder, WavefunctionBuilder, ABC):
+class Wavefunction(Object, ABC):
     @property
     @abstractmethod
     def native(self):
@@ -49,14 +34,6 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
     @property
     def time(self) -> float:
         return self._time
-
-    @property
-    def load_time(self) -> float | None:
-        return self._load_time
-
-    @load_time.setter
-    def load_time(self, load_time: float):
-        self._load_time = load_time
 
     @property
     def iterations(self) -> int | None:
@@ -119,9 +96,6 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
         retried: bool | None = None,
         converged: bool | None = None,
     ):
-        Builder.__init__(self)
-        self._load_time = None
-
         self._molecule = molecule
         self._basis = basis
         self._initial = initial
@@ -133,6 +107,7 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
 
     def __getstate__(self):
         return (
+            Object.__getstate__(self),
             self.molecule,
             self.basis,
             self.initial,
@@ -144,7 +119,7 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
         )
 
     def __setstate__(self, serialized):
-        Builder.__init__(self)
+        Object.__setstate__(self, serialized[0])
 
         (
             self._molecule,
@@ -155,4 +130,4 @@ class Wavefunction(Builder, WavefunctionBuilder, ABC):
             self._iterations,
             self._retried,
             self._converged,
-        ) = serialized
+        ) = serialized[1:]

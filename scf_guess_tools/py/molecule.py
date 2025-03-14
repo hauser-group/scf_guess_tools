@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from .core import Object
 from ..molecule import Molecule as Base
-from .engine import Engine
 from pyscf.gto import M, Mole as Native
 
 import os
 import re
 
 
-class Molecule(Base):
+class Molecule(Base, Object):
     @property
     def native(self) -> Native:
         return self._native
@@ -38,15 +38,18 @@ class Molecule(Base):
         self._native = native
 
     def __getstate__(self):
-        return self.name, self.charge, self.multiplicity, self.geometry
+        return (
+            super().__getstate__(),
+            self.name,
+            self.charge,
+            self.multiplicity,
+            self.geometry,
+        )
 
     def __setstate__(self, serialized):
-        self._name, q, m, atom = serialized
+        super().__setstate__(serialized[0])
+        self._name, q, m, atom = serialized[1:]
         self._native = M(atom=atom, charge=q, spin=m - 1)
-
-    @classmethod
-    def engine(cls) -> Engine:
-        return Engine(reinit_singleton=False)
 
     @classmethod
     def load(cls, path: str) -> Molecule:

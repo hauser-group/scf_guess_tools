@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from ..molecule import Molecule as Base
-from .engine import Engine
+from .core import Object
 from psi4.core import Molecule as Native
+from typing import overload
 
 import os
 import re
 
 
-class Molecule(Base):
+class Molecule(Base, Object):
     @property
     def native(self) -> Native:
         return self._native
@@ -37,16 +38,14 @@ class Molecule(Base):
         self._native = native
 
     def __getstate__(self):
-        return self.name, self.geometry
+        return super().__getstate__(), self.name, self.geometry
 
     def __setstate__(self, serialized):
-        self._native = Native.from_string(
-            serialized[1], name=serialized[0], dtype="psi4"
-        )
+        super().__setstate__(serialized[0])
 
-    @classmethod
-    def engine(cls) -> Engine:
-        return Engine(reinit_singleton=False)
+        self._native = Native.from_string(
+            serialized[2], name=serialized[1], dtype="psi4"
+        )
 
     @classmethod
     def load(cls, path: str) -> Molecule:
