@@ -38,22 +38,10 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
-        native = self._native
-
-        if self._is_guess:
-            try:
-                with clean_context():
-                    psi4.set_options({"MAXITER": 0, "FAIL_ON_MAXITER": True})
-                    _, native = _hartree_fock(
-                        self.molecule, self.initial, self.basis, False
-                    )
-            except psi4.driver.SCFConvergenceError as e:
-                native = e.wfn
-
         if self.molecule.singlet:
-            return Matrix(native.Fa())
+            return Matrix(self._native.Fa())
 
-        return (Matrix(native.Fa()), Matrix(native.Fb()))
+        return (Matrix(self._native.Fa()), Matrix(self._native.Fb()))
 
     def __init__(self, native: Native, is_guess: bool, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -84,12 +72,14 @@ class Wavefunction(Base, Object):
                 ref_wfn=ref_wfn,
                 reference="RHF" if molecule.singlet else "UHF",
             )
+
             start_wfn.form_H()
             start_wfn.form_Shalf()
             start_wfn.guess()
 
-            # Calling form_F doesn't deliver a correct fock matrix, so we handle it in self.F
-            # We can't handle it here because this would cause a deviation in the density
+            start_wfn.initialize()
+            start_wfn.form_G()
+            start_wfn.form_F()
 
             # to_file() different after re-loading with from_file()
             start_wfn = Native.from_file(start_wfn.to_file())
