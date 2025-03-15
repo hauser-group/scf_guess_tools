@@ -1,4 +1,4 @@
-from .core import Backend, cache_directory, cache
+from .core import Backend, cache_directory, cache as do_cache
 from .molecule import Molecule
 from .wavefunction import Wavefunction
 
@@ -22,7 +22,7 @@ def _forward(backend: Backend, get_operation, cache: bool, time: bool, *args, **
     operation = get_operation(package)
 
     if cache:
-        operation = cache(operation)
+        operation = do_cache()(operation)
 
     start = process_time()
     result = operation(*args, **kwargs)
