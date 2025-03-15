@@ -8,3 +8,7 @@ class Object(Base):
 
 
 guessing_schemes = ["minao", "1e", "atom", "huckel", "vsap"]
+
+
+def reset():
+    pass
