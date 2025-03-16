@@ -37,10 +37,13 @@ def cache_directory(throw: bool = False) -> str | None:
     return directory
 
 
-def cache(ignore: list[str] = None, verbose: int = None):
+def cache(enable: bool = True, ignore: list[str] = None, verbose: int = None):
     def decorator(function):
         @wraps(function)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, cache: bool = True, **kwargs):
+            if not cache:
+                return function(*args, **kwargs)
+
             global _memory
 
             if _memory is None:
