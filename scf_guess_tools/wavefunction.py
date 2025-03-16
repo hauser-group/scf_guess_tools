@@ -34,16 +34,16 @@ class Wavefunction(Object, ABC):
         return self._time
 
     @property
-    def iterations(self) -> int | None:
-        return self._iterations
-
-    @property
-    def retried(self) -> bool | None:
-        return self._retried
-
-    @property
     def converged(self) -> bool | None:
         return self._converged
+
+    @property
+    def stable(self) -> bool | None:
+        return self._stable
+
+    @property
+    def second_order(self) -> bool | None:
+        return self._second_order
 
     @abstractmethod
     @timeable
@@ -101,18 +101,18 @@ class Wavefunction(Object, ABC):
         initial: str | Wavefunction,
         origin: str,
         time: float,
-        iterations: int | None = None,
-        retried: bool | None = None,
         converged: bool | None = None,
+        stable: bool | None = None,
+        second_order: bool | None = None,
     ):
         self._molecule = molecule
         self._basis = basis
         self._initial = initial
         self._origin = origin
         self._time = time
-        self._iterations = iterations
-        self._retried = retried
         self._converged = converged
+        self._stable = stable
+        self._second_order = second_order
 
     def __getstate__(self):
         return (
@@ -122,9 +122,9 @@ class Wavefunction(Object, ABC):
             self.initial,
             self.origin,
             self.time,
-            self.iterations,
-            self.retried,
             self.converged,
+            self.stable,
+            self.second_order,
         )
 
     def __setstate__(self, serialized):
@@ -136,7 +136,7 @@ class Wavefunction(Object, ABC):
             self._initial,
             self._origin,
             self._time,
-            self._iterations,
-            self._retried,
             self._converged,
+            self._stable,
+            self._second_order,
         ) = serialized[1:]

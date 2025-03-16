@@ -97,27 +97,22 @@ class Wavefunction(Base, Object):
         molecule.native.basis = basis
         molecule.native.build()
 
-        method = RHF if molecule.singlet else UHF
-        solver = method(molecule.native)
+        def calculate(second_order: bool, so_max_iterations: int | None = None):
+            return _hartree_fock(
+                molecule, guess, basis, second_order, so_max_iterations
+            )
 
-        guess = solver.init_guess if guess is None else guess
+        second_order = False
+        solver, converged, stable = calculate(second_order)
+        satisfied = lambda: converged and (molecule.singlet or stable)
 
-        if isinstance(guess, str):
-            assert guess in guessing_schemes
-            solver.run(init_guess=guess)
-        else:
-            solver.kernel(dm0=guess._D)
+        if not satisfied():
+            second_order = True
+            so_max_iterations = 5
 
-        retry = False
-
-        if molecule.atoms <= 30:
-            mo, _, stable, _ = solver.stability(return_status=True)
-            retry = not stable
-
-            while not stable:
-                dm = solver.make_rdm1(mo, solver.mo_occ)
-                solver = solver.run(dm)
-                mo, _, stable, _ = solver.stability(return_status=True)
+            while not satisfied() and so_max_iterations <= 50:
+                solver, converged, stable = calculate(second_order, so_max_iterations)
+                so_max_iterations += 5
 
         end = process_time()
 
@@ -129,7 +124,50 @@ class Wavefunction(Base, Object):
             initial=guess,
             origin="calculation",
             time=end - start,
-            iterations=solver.cycles,
-            retried=retry,
-            converged=solver.converged,
+            converged=converged,
+            stable=stable,
+            second_order=second_order,
         )
+
+
+def _hartree_fock(
+    molecule: Molecule,
+    guess: str,
+    basis: str,
+    second_order: bool,
+    so_max_iterations: int | None,
+) -> tuple[Native, bool, bool]:
+    method = RHF if molecule.singlet else UHF
+    solver = method(molecule.native)
+
+    if second_order:
+        solver = solver.newton()
+        solver.max_cycle_inner = so_max_iterations
+
+    guess = solver.init_guess if guess is None else guess
+
+    if isinstance(guess, str):
+        assert guess in guessing_schemes
+        solver.run(init_guess=guess)
+    else:
+        solver.kernel(dm0=guess._D)
+
+    converged, stable = solver.converged, False
+
+    if converged:
+        stability_options = {
+            "internal": True,
+            "external": False,
+            "return_status": True,
+        }
+
+        mo, _, stable, _ = solver.stability(**stability_options)
+        retries = 0
+
+        while not molecule.singlet and not stable and retries < 15:
+            dm = solver.make_rdm1(mo, solver.mo_occ)
+            solver = solver.run(dm)
+            mo, _, stable, _ = solver.stability(**stability_options)
+            retries += 1
+
+    return solver, converged, stable

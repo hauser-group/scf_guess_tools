@@ -10,16 +10,16 @@ from math import sqrt
 def f_score(
     initial: Wavefunction,
     final: Wavefunction | None = None,
-    final_density_mul_overlap: Matrix | None = None,
+    DfS: Matrix | tuple[Matrix, Matrix] | None = None,
 ) -> float:
-    assert final is not None or final_density_mul_overlap is not None
+    assert final is not None or DfS is not None
 
     S = initial.overlap()
 
-    if final_density_mul_overlap is None:
+    if DfS is None:
         DfS = [df @ S for df in final.density(tuplify=True)]
     else:
-        DfS = tuplify(final_density_mul_overlap)
+        DfS = tuplify(DfS)
 
     Q = [(di @ S @ dfs).trace for di, dfs in zip(initial.density(tuplify=True), DfS)]
     N = [dfs.trace for dfs in DfS]
