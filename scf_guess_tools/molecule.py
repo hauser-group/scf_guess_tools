@@ -38,3 +38,8 @@ class Molecule(Object, ABC):
     @abstractmethod
     def geometry(self):
         pass
+
+    @property
+    @abstractmethod
+    def symmetry(self) -> bool:
+        pass

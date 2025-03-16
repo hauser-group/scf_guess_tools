@@ -33,6 +33,10 @@ class Molecule(Base, Object):
     def geometry(self):
         return self._native.atom
 
+    @property
+    def symmetry(self) -> bool:
+        return self._native.symmetry
+
     def __init__(self, name: str, native: Native):
         self._name = name
         self._native = native
@@ -44,15 +48,16 @@ class Molecule(Base, Object):
             self.charge,
             self.multiplicity,
             self.geometry,
+            self.symmetry,
         )
 
     def __setstate__(self, serialized):
         super().__setstate__(serialized[0])
-        self._name, q, m, atom = serialized[1:]
-        self._native = M(atom=atom, charge=q, spin=m - 1)
+        self._name, q, m, atom, symmetry = serialized[1:]
+        self._native = M(atom=atom, charge=q, spin=m - 1, symmetry=symmetry)
 
     @classmethod
-    def load(cls, path: str) -> Molecule:
+    def load(cls, path: str, symmetry: bool = True) -> Molecule:
         base_name = os.path.basename(path)
         name, _ = os.path.splitext(base_name)
 
@@ -62,4 +67,4 @@ class Molecule(Base, Object):
         q = int(re.search(r"charge\s+(-?\d+)", lines[1]).group(1))
         m = int(re.search(r"multiplicity\s+(\d+)", lines[1]).group(1))
 
-        return Molecule(name, M(atom=path, charge=q, spin=m - 1))
+        return Molecule(name, M(atom=path, charge=q, spin=m - 1, symmetry=symmetry))
