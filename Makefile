@@ -1,4 +1,18 @@
-.PHONY: test
+CONDA_BUILD := $(shell echo $$CONDA_PREFIX)/conda-bld
+
+build:
+	conda install -y conda-build
+	conda build --channel conda-forge --channel pyscf recipe
+
+install:
+	conda install -y --channel conda-forge --channel pyscf --channel $(CONDA_BUILD) --use-local scf_guess_tools
+
+develop:
+	conda install -y pre-commit black
+	pre-commit install
+	conda remove -y --force scf_guess_tools
+	conda develop .
+
 test:
 	@bash -c '\
 	set_env() { \
@@ -14,3 +28,5 @@ test:
 	set_env SGT_CACHE sgt; \
 	cd tests; \
 	pytest -vv;'
+
+.PHONY: build install develop test
