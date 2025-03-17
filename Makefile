@@ -1,19 +1,20 @@
 CONDA_BUILD := $(shell echo $$CONDA_PREFIX)/conda-bld
 
 build:
-	conda install -y conda-build
+	conda install --yes conda-build
 	conda build --channel conda-forge --channel pyscf recipe
 
 install:
-	conda install -y --channel conda-forge --channel pyscf --channel $(CONDA_BUILD) --use-local scf_guess_tools
+	conda install --yes --channel conda-forge --channel pyscf --channel $(CONDA_BUILD) --use-local scf_guess_tools
 
 develop:
-	conda install -y pre-commit black
+	conda install --yes --channel conda-forge pre-commit black
 	pre-commit install
-	conda remove -y --force scf_guess_tools
+	conda remove --yes --force scf_guess_tools
 	conda develop .
 
 test:
+	conda install --yes --channel conda-forge pytest python-constraint
 	@bash -c '\
 	set_env() { \
 	  local random="$$(uuidgen)"; \

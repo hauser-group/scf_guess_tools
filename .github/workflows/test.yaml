@@ -25,6 +25,11 @@ jobs:
         run: |
           conda info
           conda list
-      - name: Build and test conda package
+      - name: Build and install conda package
         shell: bash -el {0}
-        run: conda build --channel conda-forge --channel pyscf recipe
+        run: |
+          make build
+          make install
+      - name: Test conda package
+        shell: bash -el {0}
+        run: make test
