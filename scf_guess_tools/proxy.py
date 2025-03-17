@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .core import Backend, cache_directory, cache as do_cache
 from .molecule import Molecule
 from .wavefunction import Wavefunction
