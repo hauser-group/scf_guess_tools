@@ -9,6 +9,7 @@ from scf_guess_tools.py import reset as reset_py
 
 import os
 import pytest
+import random
 import shutil
 
 
@@ -60,6 +61,8 @@ def path_fixture(
     min_atoms: int = 0,
     max_atoms: int = 1000,
 ):
+    random.seed(1)
+
     mapping = {
         "chargedTrue": charged,
         "chargedFalse": non_charged,
