@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from .core import Backend, cache_directory, cache as do_cache
+from .matrix import Matrix
 from .molecule import Molecule
 from .wavefunction import Wavefunction
 
+from numpy.typing import NDArray
 from time import process_time
 
 
@@ -35,6 +37,12 @@ def _forward(backend: Backend, get_operation, cache: bool, time: bool, *args, **
 
 def load(path: str, backend: Backend, cache=False, time=False, **kwargs) -> Molecule:
     return _forward(backend, lambda p: p.Molecule.load, cache, time, path, **kwargs)
+
+
+def build(
+    array: NDArray, backend: Backend, cache=False, time=False, **kwargs
+) -> Matrix:
+    return _forward(backend, lambda p: p.Matrix.build, cache, time, array, **kwargs)
 
 
 def guess(
