@@ -58,8 +58,27 @@ def test_ignore(context):
     assert invocations == 1, "function must not be invoked for cached result"
 
 
-def test_molecule(context, backend: Backend, molecule_path: str):
-    molecule = load(molecule_path, backend)
+def test_disable(context):
+    invocations = 0
+
+    @cache()
+    def increment(input):
+        nonlocal invocations
+        invocations += 1
+
+        return input + 1
+
+    assert increment(1) == 2, "function must work properly"
+    assert invocations == 1, "function must be invoked for non-cached result"
+    assert increment(1, cache=False) == 2, "function must work properly"
+    assert invocations == 2, "function must be invoked for disabled cache"
+    assert increment(1, cache=True) == 2, "function must work properly"
+    assert invocations == 2, "function must not be invoked for cached result"
+
+
+@pytest.mark.parametrize("symmetry", [True, False])
+def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool):
+    molecule = load(molecule_path, backend, symmetry=symmetry)
     invocations = 0
 
     @cache()
@@ -87,23 +106,26 @@ def test_molecule(context, backend: Backend, molecule_path: str):
 
 
 @pytest.mark.parametrize(
-    "backend_package, builder, scheme",
+    "backend_package, builder, scheme, symmetry",
     [
-        (backend_package, builder, scheme)
+        (backend_package, builder, scheme, symmetry)
         for backend_package in zip([Backend.PSI, Backend.PY], [psi, py])
         for builder in [guess, calculate]
         for scheme in [None] + backend_package[1].guessing_schemes
+        for symmetry in [True, False]
     ],
 )
 def test_wavefunction(
+    context,
     backend_package: tuple[Backend, ModuleType],
     wavefunction_path: str,
     basis: str,
     scheme: str,
     builder: Callable,
+    symmetry: bool,
 ):
     backend, package = backend_package
-    molecule = load(wavefunction_path, backend)
+    molecule = load(wavefunction_path, backend, symmetry=symmetry)
     wavefunction = builder(molecule, basis, scheme)
     invocations = 0
 

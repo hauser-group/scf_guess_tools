@@ -23,6 +23,8 @@ def context():
 
         try:
             shutil.rmtree(directory)
+        except:
+            pass
         finally:
             os.makedirs(directory, exist_ok=True)
 
@@ -30,7 +32,11 @@ def context():
     reset_psi()
     reset_py()
 
-    yield
+    try:
+        yield
+    finally:
+        for directory in directories:
+            shutil.rmtree(directory)
 
 
 @pytest.fixture(params=[Backend.PSI, Backend.PY])
@@ -51,7 +57,8 @@ def path_fixture(
     non_charged: int = 1,
     singlet: int = 1,
     non_singlet: int = 1,
-    max_atoms: int = None,
+    min_atoms: int = 0,
+    max_atoms: int = 1000,
 ):
     mapping = {
         "chargedTrue": charged,
@@ -60,14 +67,15 @@ def path_fixture(
         "singletFalse": non_singlet,
     }
 
-    categories = defaultdict(list)
+    categories = defaultdict(set)
+    atoms = {}
 
     for name, attributes in properties.items():
-        categories[f"charged{attributes['charge'] != 0}"].append(name)
-        categories[f"singlet{attributes['multiplicity'] == 1}"].append(name)
+        if attributes["atoms"] < min_atoms or attributes["atoms"] > max_atoms:
+            continue
 
-    for top, a in categories.items():
-        print(top)
+        categories[f"charged{attributes['charge'] != 0}"].add(name)
+        categories[f"singlet{attributes['multiplicity'] == 1}"].add(name)
 
     from constraint import Problem, AllDifferentConstraint
 
@@ -80,20 +88,9 @@ def path_fixture(
             problem.addVariable(variable, list(categories[category]))
             variables.append(variable)
 
-    def allowed(*names):
-        if max_atoms is None:
-            return True
-
-        for name in names:
-            if properties[name]["atoms"] > max_atoms:
-                return False
-
-        return True
-
-    problem.addConstraint(allowed, variables)
     problem.addConstraint(AllDifferentConstraint(), variables)
-
     solution = problem.getSolution()
+
     assert solution is not None
 
     @pytest.fixture(params=solution.values())

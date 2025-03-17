@@ -37,7 +37,7 @@ def cache_directory(throw: bool = False) -> str | None:
     return directory
 
 
-def cache(enable: bool = True, ignore: list[str] = None, verbose: int = None):
+def cache(ignore: list[str] = None, verbose: int = None):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, cache: bool = True, **kwargs):

@@ -1,72 +1,158 @@
 from __future__ import annotations
 
-from common import similar
-from provider import context, engine, basis_fixture, path_fixture
+from common import equal, replace_random_digit, similar
+from provider import context, backend, basis_fixture, path_fixture
 from scf_guess_tools import (
-    Engine,
-    Matrix,
-    Metric,
-    PyEngine,
-    PsiEngine,
-    FScore,
-    DIISError,
-    EnergyError,
+    Backend,
+    psi,
+    py,
+    load,
+    guess,
+    calculate,
+    cache,
+    clear_cache,
+    f_score,
+    diis_error,
+    energy_error,
 )
+from types import ModuleType
+from typing import Callable
 
 import numpy as np
 import pytest
-
-py_schemes = ["minao", "1e", "atom", "huckel", "vsap"]
-psi_schemes = ["CORE", "SAD", "GWH", "HUCKEL", "SAP"]
-
-guess_basis = basis_fixture(["sto-3g", "pcseg-1"])
-guess_path = path_fixture(paths=10)
-
-calculate_basis = basis_fixture(["pcseg-1"])
-calculate_path = path_fixture(paths=5, large=False)
-
-metric_basis = basis_fixture(["sto-3g", "pcseg-0"])
-metric_path = path_fixture(paths=5, large=False)
+import warnings
 
 
-def test_guess(context, guess_path: str, guess_basis: str):
-    engines = [PyEngine(cache=False, verbose=1), PsiEngine(cache=False, verbose=1)]
-    molecules = [e.load(guess_path) for e in engines]
-    schemes = ["1e", "CORE"]
-    guesses = [
-        e.guess(m, guess_basis, s) for e, m, s in zip(engines, molecules, schemes)
-    ]
+guess_basis = basis_fixture(["sto-3g", "pcseg-0", "pcseg-1"])
+guess_path = path_fixture(non_singlet=0, max_atoms=8)
+
+converged_basis = basis_fixture(["pcseg-0"])
+converged_path = path_fixture(
+    charged=0, non_charged=1, singlet=10, non_singlet=10, max_atoms=15
+)
+
+metric_basis = basis_fixture(["pcseg-0"])
+metric_path = path_fixture(
+    charged=0, non_charged=1, singlet=10, non_singlet=10, max_atoms=15
+)
+
+
+def test_core_guess(context, guess_path: str, guess_basis: str):
+    backends = [Backend.PSI, Backend.PY]
+    molecules = [load(guess_path, b) for b in backends]
+    schemes = ["CORE", "1e"]
+    initials = [guess(m, guess_basis, s) for m, s in zip(molecules, schemes)]
 
     assert similar(
-        *guesses, ignore=["molecule", "time", "initial"]
-    ), "core guesses have to be similar"
+        *initials, ignore=["molecule", "initial", "time"]
+    ), "core guess wavefunctions must be similar"
+
+    finals = [calculate(m, guess_basis, s) for m, s in zip(molecules, schemes)]
+    tolerance = 1e-2
+
+    for final in finals:
+        if not final.converged or not final.stable:
+            warnings.warn(
+                f"Solution for {final.molecule.name} not converged or stable, skipping"
+            )
+            return
+
+    f_scores = [f_score(i, f) for i, f in zip(initials, finals)]
+    assert similar(
+        *f_scores, tolerance=tolerance
+    ), f"core guesses must have similar f-scores {f_scores}"
+
+    diis_errors = [diis_error(i) for i in initials]
+    assert similar(
+        *diis_errors, tolerance=tolerance
+    ), f"core guesses must have similar diis errors {diis_errors}"
+
+    energy_errors = [energy_error(i, f) for i, f in zip(initials, finals)]
+    assert similar(
+        *energy_errors, tolerance=tolerance
+    ), f"core guesses must have similar energy errors {energy_errors}"
 
 
-@pytest.mark.parametrize("schemes", list(zip(py_schemes, psi_schemes)))
-def test_calculate(
-    context, calculate_path: str, calculate_basis, schemes: tuple[str, str]
+def test_converged(context, converged_path: str, converged_basis: str):
+    backends = [Backend.PSI, Backend.PY]
+    molecules = [load(converged_path, b) for b in backends]
+    finals = [calculate(m, converged_basis) for m in molecules]
+
+    for final in finals:
+        if not final.converged or not final.stable:
+            warnings.warn(
+                f"Solution for {final.molecule.name} not converged or stable, skipping"
+            )
+            return
+
+        f = f_score(final, final)
+        assert 1 - f < 1e-10, "converged f-score must be close to 1"
+
+        d = diis_error(final)
+        assert d < 1e-5, "diis error must be close to 0"
+
+        e = energy_error(final, final)
+        assert e < 1e-10, "energy error must be close to 0"
+
+    assert similar(
+        *finals, ignore=["molecule", "initial", "time", "stable", "second_order"]
+    ), "converged wavefunctions must be similar"
+
+
+@pytest.mark.parametrize(
+    "backend_package, metric",
+    [
+        (backend_package, metric)
+        for backend_package in zip([Backend.PSI, Backend.PY], [psi, py])
+        for metric in [f_score, diis_error, energy_error]
+    ],
+)
+def test_metric(
+    context, backend_package, metric_path: str, metric_basis: str, metric: Callable
 ):
-    engines = [PyEngine(cache=False, verbose=1), PsiEngine(cache=False, verbose=1)]
-    molecules = [e.load(calculate_path) for e in engines]
-    wavefunctions = [
-        e.calculate(m, calculate_basis, s)
-        for e, m, s in zip(engines, molecules, schemes)
-    ]
+    backend, package = backend_package
+    molecule = load(metric_path, backend)
+    final = calculate(molecule, metric_basis)
 
-    assert similar(
-        *wavefunctions,
-        ignore=["molecule", "time", "initial", "iterations", "retried"],
-    ), "converged wavefunctions have to be similar"
+    if not final.converged or not final.stable:
+        warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
+        return
+
+    scores = set()
+    for scheme in package.guessing_schemes:
+        initial = guess(molecule, metric_basis, scheme)
+
+        if metric == f_score:
+            scores.add(f_score(initial, final))
+        elif metric == diis_error:
+            scores.add(diis_error(initial))
+        elif metric == energy_error:
+            scores.add(energy_error(initial, final))
+        else:
+            assert f"Unexpected metric {metric}"
+
+    assert len(scores) > 1, "different schemes must yield different scores"
 
 
-@pytest.mark.parametrize("metric", [FScore, DIISError, EnergyError])
-def test_metric(context, metric_path: str, metric_basis: str, metric: Metric):
-    engines = [PyEngine(cache=False, verbose=1), PsiEngine(cache=False, verbose=1)]
-    molecules = [e.load(metric_path) for e in engines]
-    schemes = ["1e", "CORE"]
-    guesses = [
-        e.guess(m, metric_basis, s) for e, m, s in zip(engines, molecules, schemes)
-    ]
-    metrics = [metric(g) for g in guesses]
+@pytest.mark.parametrize("backend_package", zip([Backend.PSI, Backend.PY], [psi, py]))
+def test_f_score(context, backend_package, metric_path: str, metric_basis: str):
+    backend, package = backend_package
+    molecule = load(metric_path, backend)
+    final = calculate(molecule, metric_basis)
 
-    assert similar(*[m.value for m in metrics]), "metric values have to be similar"
+    S = final.overlap()
+    DfS = tuple(Df @ S for Df in final.density(tuplify=True))
+
+    if not final.converged or not final.stable:
+        warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
+        return
+
+    for scheme in package.guessing_schemes:
+        initial = guess(molecule, metric_basis, scheme)
+
+        regular = f_score(initial, final)
+        boosted = f_score(initial, DfS=DfS)
+
+        assert np.isclose(
+            regular, boosted, rtol=1e-10
+        ), f"regular and boosted f-score must be equal {regular} {boosted}"

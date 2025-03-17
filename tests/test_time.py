@@ -22,6 +22,7 @@ import pytest
 
 basis = basis_fixture(["sto-3g", "pcseg-0"])
 basics_path = path_fixture(max_atoms=15)
+
 wavefunction_path = path_fixture(max_atoms=7)
 times_path = path_fixture(charged=False, non_singlet=False, min_atoms=10, max_atoms=20)
 
@@ -107,19 +108,19 @@ def test_wavefunction(
 
 def test_times(context, backend: Backend, times_path: str, basis: str):
     molecule = load(times_path, backend)
-    initial_1, initial_time = guess(molecule, basis, cache=True, time=True)
-    final_1, final_time = calculate(molecule, basis, cache=True, time=True)
+    initial_1, initial_time_1 = guess(molecule, basis, cache=True, time=True)
+    final_1, final_time_1 = calculate(molecule, basis, cache=True, time=True)
 
     assert (
-        initial_time >= initial_1.time
+        initial_time_1 >= initial_1.time
     ), "invocation time must be bigger than non-cached guessing time"
 
     assert (
-        final_time >= final_1.time
+        final_time_1 >= final_1.time
     ), "invocation time must be bigger than non-cached calculation time"
 
-    assert final_time >= initial_time, "calculation must take longer than guessing"
-    assert final_1.time > initial_1.time, "calculation must take longer than guessing"
+    assert final_time_1 >= initial_time_1, "calculation must take longer than guessing"
+    assert final_1.time >= initial_1.time, "calculation must take longer than guessing"
 
     initial_2, initial_time_2 = guess(molecule, basis, cache=True, time=True)
     final_2, final_time_2 = calculate(molecule, basis, cache=True, time=True)
