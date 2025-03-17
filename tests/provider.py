@@ -61,8 +61,6 @@ def path_fixture(
     min_atoms: int = 0,
     max_atoms: int = 1000,
 ):
-    random.seed(1)
-
     mapping = {
         "chargedTrue": charged,
         "chargedFalse": non_charged,
@@ -79,6 +77,13 @@ def path_fixture(
 
         categories[f"charged{attributes['charge'] != 0}"].add(name)
         categories[f"singlet{attributes['multiplicity'] == 1}"].add(name)
+
+    random.seed(42)
+    for category, names in categories.items():
+        unique = sorted(list(names))
+        random.shuffle(unique)
+
+        categories[category] = unique
 
     from constraint import Problem, AllDifferentConstraint
 
