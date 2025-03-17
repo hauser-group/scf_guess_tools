@@ -36,28 +36,46 @@ You should specify the following environment variables:
 
 This package provides uniform interfaces such as the abstract `Molecule`,
 `Wavefunction` and `Matrix` classes. These interfaces are implemented by the
-`scf_guess_tools.psi` and `scf_guess_tools.py` backends. For a detailed
+`scf_guess_tools.psi` and `scf_guess_tools.py` backends. For a more detailed
 description of available features please refer to the in-source documentation.
 
 
 ```python
-from scf_guess_tools import Backend, psi, py, load, guess, calculate
+from scf_guess_tools import Backend, load, guess, calculate, guessing_schemes
 from scf_guess_tools import f_score, diis_error, energy_error
 
-molecule = load("ch3.xyz", Backend.PY)  # or Backend.PSI
-final = calculate(molecule, "pcseg-0")
+backend = Backend.PY # or Backend.PSI
 
-for scheme in py.guessing_schemes:
+molecule = load("ch3.xyz", backend, symmetry=True)
+print(f"molecule name: {molecule.name}")
+print(f"molecule charge: {molecule.charge}")
+print(f"molecule multiplicity: {molecule.multiplicity}")
+print(f"molecule is singlet: {molecule.singlet}")
+
+final = calculate(molecule, "pcseg-0")
+print(f"solution converged: {final.converged}")
+print(f"solution stable: {final.stable}")
+print(f"solution required 2nd order scf: {final.second_order}")
+
+print(f"overlap: {final.overlap()}")
+
+# For non-singlets the alpha and beta matrices are returned as a tuple
+# For singlets, a single matrix is returned
+# Setting tuplify=True ensures that a tuple is returned, regardless of multiplicity
+for density in final.density(tuplify=True):
+    print(f"density: {density}")
+
+for scheme in guessing_schemes(backend):
     initial = guess(molecule, "pcseg-0", scheme)
-    
+
     f = f_score(initial, final)
     print(f"f-score: {f}")
-    
+
     d = diis_error(initial)
-    print("DIIS error: {d")
-    
+    print(f"DIIS error: {d}")
+
     e = energy_error(initial, final)
-    print("energy error: {e}")
+    print(f"energy error: {e}")
 ```
 
 ### Caching
@@ -68,7 +86,7 @@ You can also cache your own functions by applying the provided `@cache`
 annotation.
 
 ```python
-from scf_guess_tools import Backend, psi, load, guess, calculate, f_score
+from scf_guess_tools import Backend, Wavefunction, load, guess, calculate, f_score
 from scf_guess_tools import cache, clear_cache
 
 molecule = load("hoclo.xyz", Backend.PSI, cache=True)
@@ -95,7 +113,7 @@ used CPU time as determined by `time.process_time()`. Passing in a `time=True`
 parameter will cause the function to return a tuple `(result, time)`.
 
 ```python
-from scf_guess_tools import Backend, load, calculate, f_score
+from scf_guess_tools import Backend, load, guess, calculate, f_score
 
 molecule, load_time = load("hoclo.xyz", Backend.PSI, time=True)
 print(f"loading took {load_time} s")
@@ -103,8 +121,11 @@ print(f"loading took {load_time} s")
 initial, guess_time = guess(molecule, "pcseg-0", time=True)
 print(f"guessing took {guess_time} s")
 
-final, calculate_time = calculate(molecule, "pcseg-0", initial, time=True)
+final, calculate_time = calculate(molecule, "pcseg-0", initial, cache=True, time=True)
 print(f"calculating took {calculate_time} s")
+
+final, calculate_time = calculate(molecule, "pcseg-0", initial, cache=True, time=True)
+print(f"cached calculation took {calculate_time} s")
 
 f, score_time = f_score(initial, final, time=True)
 print(f"scoring took {score_time} s")
