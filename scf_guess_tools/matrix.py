@@ -32,14 +32,6 @@ class Matrix(Object, ABC):
         pass
 
     @abstractmethod
-    def __getstate__(self):
-        pass
-
-    @abstractmethod
-    def __setstate__(self, serialized):
-        pass
-
-    @abstractmethod
     def __repr__(self) -> str:
         pass
 
@@ -53,4 +45,9 @@ class Matrix(Object, ABC):
 
     @abstractmethod
     def __matmul__(self, other: Matrix) -> Matrix:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def build(cls, array: NDArray) -> Matrix:
         pass

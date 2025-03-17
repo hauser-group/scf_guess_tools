@@ -49,3 +49,7 @@ class Matrix(Base, Object):
 
     def __matmul__(self, other: Matrix) -> Matrix:
         return Matrix(self.native.__matmul__(other.native))
+
+    @classmethod
+    def build(cls, array: NDArray) -> Matrix:
+        return Matrix(array)
