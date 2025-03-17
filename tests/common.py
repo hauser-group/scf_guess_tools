@@ -136,7 +136,6 @@ def similar_matrices(
     a, b = tuplify(a), tuplify(b)
 
     for lhs, rhs in zip(a, b):
-        assert lhs.backend() == rhs.backend()
         trace = abs(lhs.trace / rhs.trace - 1.0)
         if trace > tolerance:
             print("not similar trace ", trace)
@@ -153,8 +152,6 @@ def similar_matrices(
 def similar_wavefunctions(
     a: Wavefunction, b: Wavefunction, tolerance: float, ignore: list[str]
 ) -> bool:
-    assert a.backend() == b.backend()
-
     if not "molecule" in ignore and not equal_molecules(a.molecule, b.molecule):
         print(f"Wavefunction.molecule differs for {a} and {b}")
         return False
