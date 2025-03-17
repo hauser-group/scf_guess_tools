@@ -1,17 +1,16 @@
 .PHONY: test
 test:
 	@bash -c '\
-	check_env() { \
+	set_env() { \
+	  local random="$$(uuidgen)"; \
+	  local path="$$HOME/sgt-scratch-$$2-$$random"; \
+	  mkdir -p "$$path"; \
+	  export $$1="$$HOME/sgt-scratch-$$2-$$random"; \
 	  eval "value=\$$$${1}"; \
-	  if [ -z "$$value" ]; then \
-	    export $$1="$$HOME/scratch/$$2"; \
-	  fi; \
-	  eval "value=\$$$${1}"; \
-	  mkdir -p "$$value"; \
 	  echo "$$1=$$value"; \
 	}; \
-	check_env PSI_SCRATCH psi; \
-	check_env PYSCF_TMPDIR pyscf; \
-	check_env SGT_CACHE sgt; \
+	set_env PSI_SCRATCH psi; \
+	set_env PYSCF_TMPDIR py; \
+	set_env SGT_CACHE sgt; \
 	cd tests; \
 	pytest -vv;'
