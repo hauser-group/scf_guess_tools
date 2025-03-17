@@ -3,8 +3,6 @@ from __future__ import annotations
 from provider import context, backend, basis_fixture, path_fixture
 from scf_guess_tools import (
     Backend,
-    psi,
-    py,
     load,
     guess,
     calculate,

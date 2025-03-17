@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from common import equal, replace_random_digit
 from provider import context, backend, basis_fixture, path_fixture
-from scf_guess_tools import Backend, psi, py, load, guess, calculate, cache, clear_cache
+from scf_guess_tools import (
+    Backend,
+    load,
+    guess,
+    calculate,
+    cache,
+    clear_cache,
+    guessing_schemes,
+)
 from types import ModuleType
 from typing import Callable
 
@@ -106,25 +114,24 @@ def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool)
 
 
 @pytest.mark.parametrize(
-    "backend_package, builder, scheme, symmetry",
+    "backend, builder, scheme, symmetry",
     [
-        (backend_package, builder, scheme, symmetry)
-        for backend_package in zip([Backend.PSI, Backend.PY], [psi, py])
+        (backend, builder, scheme, symmetry)
+        for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
-        for scheme in [None] + backend_package[1].guessing_schemes
+        for scheme in [None] + guessing_schemes(backend)
         for symmetry in [True, False]
     ],
 )
 def test_wavefunction(
     context,
-    backend_package: tuple[Backend, ModuleType],
+    backend: Backend,
     wavefunction_path: str,
     basis: str,
     scheme: str,
     builder: Callable,
     symmetry: bool,
 ):
-    backend, package = backend_package
     molecule = load(wavefunction_path, backend, symmetry=symmetry)
     wavefunction = builder(molecule, basis, scheme)
     invocations = 0

@@ -30,6 +30,19 @@ _memory = None
 _cache_verbosity = None
 
 
+def guessing_schemes(backend: Backend) -> list[str]:
+    if backend == Backend.PSI:
+        from . import psi
+
+        return psi.guessing_schemes
+    elif backend == Backend.PY:
+        from . import py
+
+        return py.guessing_schemes
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
 def cache_directory(throw: bool = False) -> str | None:
     directory = os.environ.get("SGT_CACHE")
 

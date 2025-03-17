@@ -4,8 +4,6 @@ from common import equal, replace_random_digit, similar
 from provider import context, backend, basis_fixture, path_fixture
 from scf_guess_tools import (
     Backend,
-    psi,
-    py,
     load,
     guess,
     calculate,
@@ -14,6 +12,7 @@ from scf_guess_tools import (
     f_score,
     diis_error,
     energy_error,
+    guessing_schemes,
 )
 from types import ModuleType
 from typing import Callable
@@ -100,17 +99,16 @@ def test_converged(context, converged_path: str, converged_basis: str):
 
 
 @pytest.mark.parametrize(
-    "backend_package, metric",
+    "backend, metric",
     [
-        (backend_package, metric)
-        for backend_package in zip([Backend.PSI, Backend.PY], [psi, py])
+        (backend, metric)
+        for backend in [Backend.PSI, Backend.PY]
         for metric in [f_score, diis_error, energy_error]
     ],
 )
 def test_metric(
-    context, backend_package, metric_path: str, metric_basis: str, metric: Callable
+    context, backend: Backend, metric_path: str, metric_basis: str, metric: Callable
 ):
-    backend, package = backend_package
     molecule = load(metric_path, backend)
     final = calculate(molecule, metric_basis)
 
@@ -119,7 +117,7 @@ def test_metric(
         return
 
     scores = set()
-    for scheme in package.guessing_schemes:
+    for scheme in guessing_schemes(backend):
         initial = guess(molecule, metric_basis, scheme)
 
         if metric == f_score:
@@ -134,9 +132,8 @@ def test_metric(
     assert len(scores) > 1, "different schemes must yield different scores"
 
 
-@pytest.mark.parametrize("backend_package", zip([Backend.PSI, Backend.PY], [psi, py]))
-def test_f_score(context, backend_package, metric_path: str, metric_basis: str):
-    backend, package = backend_package
+@pytest.mark.parametrize("backend", [Backend.PSI, Backend.PY])
+def test_f_score(context, backend: Backend, metric_path: str, metric_basis: str):
     molecule = load(metric_path, backend)
     final = calculate(molecule, metric_basis)
 
