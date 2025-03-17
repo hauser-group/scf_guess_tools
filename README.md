@@ -10,94 +10,112 @@ uniform, high-level interface abstracting  common functionality from the
 - Calculating the electronic wavefunction of molecules using the Hartree-Fock 
 method
 - Making initial guesses using classical guessing schemes
-- Scoring arbitrary initial guesses with respect to impact on convergence
+- Scoring arbitrary initial guesses relative to the converged solution
 
 ## Installation
 
 This package is distributed via Conda. Currently, you need to manually build and
-install this package as follows.
+install this package as follows:
 
 - Activate the conda environment to which you want to install
-- Run `conda install conda-build`
-- Run `conda build --channel conda-forge --channel pyscf recipe`
-- Run `conda install --channel conda-forge --channel pyscf --use-local
-scf_guess_tools`
-
-If the last command fails, add `--channel <path-to-conda-bld-folder>` to
-manually specify the location of the package.
+- Run `make build`
+- Run `make install`
+- Run `make test` (optional)
 
 ## How to Use
 
-### Scratch Directories
+### Environment Variables
 
-You should specify scratch directories used by the backends via the
-`PSI_SCRATCH` and `PYSCF_TMPDIR` environment variables.
+You should specify the following environment variables:
+- `SGT_CACHE`: directory to store cached function results (see
+[Caching](#caching))
+- `PSI_SCRATCH`: scratch directory for the `Psi` backend
+- `PYSCF_TMPDIR`: scratch directory for the `Py` backend
 
 ### Core Functionality
 
-The `Engine` interface as implemented by `Psi4Engine` and `PySCFEngine` is the
-core of this package. It provides a common API for loading molecular geometries,
-making initial density guesses, calculating the converged density and scoring
-guesses.
+This package provides uniform interfaces such as the abstract `Molecule`,
+`Wavefunction` and `Matrix` classes. These interfaces are implemented by the
+`scf_guess_tools.psi` and `scf_guess_tools.py` backends. For a detailed
+description of available features please refer to the in-source documentation.
+
 
 ```python
-from scf_guess_tools import Metric, Psi4Engine, PySCFEngine
+from scf_guess_tools import Backend, psi, py, load, guess, calculate
+from scf_guess_tools import f_score, diis_error, energy_error
 
-engine = Psi4Engine()  # you can switch between engines on-the-fly
-molecule = engine.load("ch3.xyz")
-final = engine.calculate(molecule, "pcseg-0")
+molecule = load("ch3.xyz", Backend.PY)  # or Backend.PSI
+final = calculate(molecule, "pcseg-0")
 
-for scheme in engine.guessing_schemes():
-    initial = engine.guess(molecule, "pcseg-0", scheme)
-    score = engine.score(initial, final, Metric.DIIS_ERROR)
-    print(f"{scheme} scored {score}")
+for scheme in py.guessing_schemes:
+    initial = guess(molecule, "pcseg-0", scheme)
+    
+    f = f_score(initial, final)
+    print(f"f-score: {f}")
+    
+    d = diis_error(initial)
+    print("DIIS error: {d")
+    
+    e = energy_error(initial, final)
+    print("energy error: {e}")
 ```
 
 ### Caching
 
-This package supports caching of calculated results to disk. To enable this,
-specify the cache directory by setting the `SGT_CACHE` environment variable and
-use `cache=True` when constructing an `Engine`. You can even cache custom
-functions by using the `@Engine.memory.cache` annotation.
+Caching of function results to disk is supported via `joblib.Memory`. To enable
+it, you can pass `cache=True` to the `load`, `guess` and `calculate` functions.
+You can also cache your own functions by applying the provided `@cache`
+annotation.
 
 ```python
-from scf_guess_tools import Metric, Molecule, Psi4Engine, Wavefunction
+from scf_guess_tools import Backend, psi, load, guess, calculate, f_score
+from scf_guess_tools import cache, clear_cache
 
-engine = Psi4Engine(cache=True, verbose=1)
-molecule = engine.load("hoclo.xyz")
-initial = engine.guess(molecule, basis="pcseg-0", scheme="CORE")  # will be cached
-final = engine.calculate(molecule, basis="pcseg-0")  # will be cached
-score = engine.score(initial, final, Metric.DIIS_ERROR)  # will be cached
+molecule = load("hoclo.xyz", Backend.PSI, cache=True)
+initial = guess(molecule, "pcseg-0", cache=True) # use default guessing scheme
 
-@engine.memory.cache(verbose=1, ignore=["debug"])
-def get_molecule(wavefunction: Wavefunction, debug: bool) -> Molecule:
+# use wavefunction as initial guess
+final = calculate(molecule, "pcseg-0", initial, cache=True)
+
+@cache(ignore=["debug"]) # exclude debug from hash key
+def score(initial: Wavefunction, final: Wavefunction, debug: bool) -> float:
     print(f"debug: {debug}")
-    return wavefunction.molecule
+    return f_score(initial, final)
 
-final_molecule = get_molecule(final, debug=True)  # invokes get_molecule
-get_molecule(final, debug=False)  # returns cached result
+f1 = score(initial, final, debug=True) # invokes the function
+f2 = score(initial, final, debug=False) # returns cached result
 
-engine.memory.clear()  # clears the cache
+clear_cache() # force clear cache
+```
+
+### Timing
+
+Functions decorated with the `@timeable` annotation allow for tracking the
+used CPU time as determined by `time.process_time()`. Passing in a `time=True`
+parameter will cause the function to return a tuple `(result, time)`.
+
+```python
+from scf_guess_tools import Backend, load, calculate, f_score
+
+molecule, load_time = load("hoclo.xyz", Backend.PSI, time=True)
+print(f"loading took {load_time} s")
+
+initial, guess_time = guess(molecule, "pcseg-0", time=True)
+print(f"guessing took {guess_time} s")
+
+final, calculate_time = calculate(molecule, "pcseg-0", initial, time=True)
+print(f"calculating took {calculate_time} s")
+
+f, score_time = f_score(initial, final, time=True)
+print(f"scoring took {score_time} s")
 ```
 
 ## How to Contribute
 
-Please create an [issue](https://github.com/hauser-group/scf_guess_tools/issues)
-as well as a `feature/fancy-new-feature` branch linked to that issue. Feature
-branches are merged into the `development` branch via
-[pull requests](https://github.com/hauser-group/scf_guess_tools/pulls).
+Please create an [issue](https://github.com/hauser-group/scf_guess_tools/issues) and a corresponding [pull request](https://github.com/hauser-group/scf_guess_tools/pulls) with a
+branch named `feature/fancy-new-feature`. Pull requests are eventually merged
+into the `development` branch.
 
-We're using pre-commit hooks and the [Black](https://github.com/psf/black)
-formatter to enforce a uniform coding style. Before committing, please:
-- Run `conda install pre-commit`
-- Run `conda install black`
-- Run `pre-commit install`
-
-In order to see live changes to the package immediately, you need to install
-this  package in editable mode. After a [regular installation](#installation),
-which is necessary to ensure all dependencies are installed in the target Conda environment, in the repository root please:
-
-- Run `conda remove --force scf_guess_tools`
-- Run `conda develop .`
-
-Invoke `conda develop --uninstall .` to exit development mode.
+We're using pre-commit hooks and the [Black](https://github.com/psf/black) formatter to enforce a uniform
+coding style. In order to set this up and to activate editable mode for seeing
+live changes please run `make develop` after a [regular installation](#installation).
