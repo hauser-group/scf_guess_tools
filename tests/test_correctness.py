@@ -144,7 +144,7 @@ def test_f_score(context, backend: Backend, metric_path: str, metric_basis: str)
         warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
         return
 
-    for scheme in package.guessing_schemes:
+    for scheme in guessing_schemes(backend):
         initial = guess(molecule, metric_basis, scheme)
 
         regular = f_score(initial, final)
