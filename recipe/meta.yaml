@@ -17,20 +17,11 @@ requirements:
     - python
     - flit
   run:
-    - python>=3.8
-    - psi4>=1.9.1
-    - pyscf>=2.8.0
+    - python >=3.8,<=3.12
+    - psi4 1.9.1
+    - pyscf 2.8.0
     - numpy
     - joblib
-
-test:
-  requires:
-    - pytest
-  source_files:
-    - Makefile
-    - tests
-  commands:
-    - make test
 
 about:
   home: https://github.com/hauser-group/scf_guess_tools

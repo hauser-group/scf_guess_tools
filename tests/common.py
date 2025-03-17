@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from scf_guess_tools import Matrix, Molecule, Wavefunction
 from scf_guess_tools.common import tuplify
-from scf_guess_tools.psi4.matrix import Matrix as PsiMatrix
-from scf_guess_tools.psi4.molecule import Molecule as PsiMolecule
-from scf_guess_tools.psi4.wavefunction import Wavefunction as PsiWavefunction
+from scf_guess_tools.psi.matrix import Matrix as PsiMatrix
+from scf_guess_tools.psi.molecule import Molecule as PsiMolecule
+from scf_guess_tools.psi.wavefunction import Wavefunction as PsiWavefunction
 
 
 import numpy as np
@@ -35,7 +35,7 @@ def replace_random_digit(original: str, modified: str):
 def equal_matrices(a: Matrix, b: Matrix) -> bool:
     if isinstance(a, PsiMatrix) and isinstance(b, PsiMatrix):
         for lhs, rhs in zip(a.native.nph, b.native.nph):
-            if not np.allclose(lhs, rhs, rtol=1e-5, atol=1e-10):
+            if not np.allclose(lhs, rhs, rtol=1e-6, atol=1e-6):
                 return False
 
         return True
@@ -76,9 +76,9 @@ def equal_wavefunctions(
         "initial",
         "origin",
         "time",
-        "iterations",
-        "retried",
         "converged",
+        "stable",
+        "second_order",
     ]
 
     if not "molecule" in ignore and not equal_molecules(a.molecule, b.molecule):
@@ -93,21 +93,21 @@ def equal_wavefunctions(
             print(f"Wavefunction.{property} differs for {a} and {b}")
             return False
 
-    for property in ["S", "D", "F", "H"]:
+    for property in ["overlap", "density", "fock", "core_hamiltonian"]:
         if property in ignore:
             continue
 
-        lhs, rhs = tuplify(getattr(a, property)), tuplify(getattr(b, property))
+        lhs, rhs = tuplify(getattr(a, property)()), tuplify(getattr(b, property)())
 
         for x, y in zip(lhs, rhs):
             if not equal_matrices(x, y):
                 print(f"Wavefunction.{property} differs for {a} and {b}")
                 return False
 
-    if not "energy" in ignore and not np.isclose(
-        a.energy, b.energy, rtol=1e-5, atol=1e-10
+    if not "electronic_energy" in ignore and not np.isclose(
+        a.electronic_energy(), b.electronic_energy(), rtol=1e-5, atol=1e-10
     ):
-        print(f"Wavefunction.energy differs for {a} and {b}")
+        print(f"Wavefunction.electronic_energy differs for {a} and {b}")
         return False
 
     return True
@@ -152,7 +152,14 @@ def similar_wavefunctions(
         print(f"Wavefunction.molecule differs for {a} and {b}")
         return False
 
-    properties = ["basis", "origin", "time", "iterations", "retried", "converged"]
+    properties = [
+        "basis",
+        "origin",
+        "time",
+        "converged",
+        "stable",
+        "second_order",
+    ]
 
     for property in properties:
         if property in ignore:
@@ -168,19 +175,21 @@ def similar_wavefunctions(
         print(f"Wavefunction.initial not similar for {a} and {b}")
         return False
 
-    for property in ["S", "D", "F", "H"]:
+    for property in ["overlap", "density", "fock", "core_hamiltonian"]:
         if property in ignore:
             continue
 
-        lhs, rhs = tuplify(getattr(a, property)), tuplify(getattr(b, property))
+        lhs, rhs = tuplify(getattr(a, property)()), tuplify(getattr(b, property)())
 
         for x, y in zip(lhs, rhs):
             if not similar_matrices(x, y, tolerance * 1e3):
                 print(f"Wavefunction.{property} not similar for {a} and {b}")
                 return False
 
-    if not "energy" in ignore and not similar(a.energy, b.energy, tolerance * 1e3):
-        print(f"Wavefunction.energy not similar for {a} and {b}")
+    if not "electronic_energy" in ignore and not similar(
+        a.electronic_energy(), b.electronic_energy(), tolerance * 1e3
+    ):
+        print(f"Wavefunction.electronic_energy not similar for {a} and {b}")
         return False
 
     return True

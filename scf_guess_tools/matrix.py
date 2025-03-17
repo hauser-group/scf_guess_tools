@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from .core import Object
 from abc import ABC, abstractmethod
 from numpy.typing import NDArray
 
 
-class Matrix(ABC):
+class Matrix(Object, ABC):
     @property
     @abstractmethod
     def native(self):
@@ -28,6 +29,14 @@ class Matrix(ABC):
     @property
     @abstractmethod
     def numpy(self) -> NDArray:
+        pass
+
+    @abstractmethod
+    def __getstate__(self):
+        pass
+
+    @abstractmethod
+    def __setstate__(self, serialized):
         pass
 
     @abstractmethod

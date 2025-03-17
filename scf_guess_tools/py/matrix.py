@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from .core import Object
 from ..matrix import Matrix as Base
 from numpy.typing import NDArray
 
 import numpy as np
 
 
-class Matrix(Base):
+class Matrix(Base, Object):
     @property
     def native(self) -> NDArray:
         return self._native
@@ -32,6 +33,13 @@ class Matrix(Base):
 
     def __repr__(self) -> str:
         return self.native.__repr__()
+
+    def __getstate__(self):
+        return super().__getstate__(), self._native
+
+    def __setstate__(self, serialized):
+        super().__setstate__(serialized[0])
+        self._native = serialized[1]
 
     def __add__(self, other: Matrix) -> Matrix:
         return Matrix(self.native.__add__(other.native))

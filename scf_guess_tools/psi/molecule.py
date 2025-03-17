@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from ..molecule import Molecule as Base
-from .engine import Engine
+from .core import Object
 from psi4.core import Molecule as Native
+from typing import overload
 
 import os
 import re
 
 
-class Molecule(Base):
+class Molecule(Base, Object):
     @property
     def native(self) -> Native:
         return self._native
@@ -33,23 +34,28 @@ class Molecule(Base):
     def geometry(self):
         return self._native.to_string(dtype="psi4")
 
-    def __init__(self, native: Native):
+    @property
+    def symmetry(self) -> bool:
+        return self._symmetry
+
+    def __init__(self, native: Native, symmetry: bool):
         self._native = native
+        self._symmetry = symmetry
 
     def __getstate__(self):
-        return self.name, self.geometry
+        return super().__getstate__(), self.name, self.geometry, self.symmetry
 
     def __setstate__(self, serialized):
+        super().__setstate__(serialized[0])
+
         self._native = Native.from_string(
-            serialized[1], name=serialized[0], dtype="psi4"
+            serialized[2], name=serialized[1], dtype="psi4"
         )
 
-    @classmethod
-    def engine(cls) -> Engine:
-        return Engine(reinit_singleton=False)
+        self._symmetry = serialized[3]
 
     @classmethod
-    def load(cls, path: str) -> Molecule:
+    def load(cls, path: str, symmetry: bool = True) -> Molecule:
         with open(path, "r") as file:
             lines = file.readlines()
 
@@ -62,4 +68,9 @@ class Molecule(Base):
         base_name = os.path.basename(path)
         name, _ = os.path.splitext(base_name)
 
-        return Molecule(Native.from_string(xyz, name=name, dtype="xyz+"))
+        molecule = Native.from_string(xyz, name=name, dtype="xyz+")
+
+        if not symmetry:
+            molecule.reset_point_group("C1")
+
+        return Molecule(molecule, symmetry)
