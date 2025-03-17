@@ -17,6 +17,14 @@ class Wavefunction(Base, Object):
     def native(self) -> Native:
         return self._native
 
+    @property
+    def molecule(self) -> Molecule:
+        return self._molecule
+
+    @property
+    def initial(self) -> str | Wavefunction:
+        return self._initial
+
     @timeable
     def overlap(self) -> Matrix:
         return Matrix(self._native.get_ovlp())
@@ -43,17 +51,38 @@ class Wavefunction(Base, Object):
 
         return Matrix(F[0]), Matrix(F[1])
 
-    def __init__(self, native: Native, D: NDArray, *args, **kwargs):
+    def __init__(
+        self,
+        native: Native,
+        D: NDArray,
+        molecule: Molecule,
+        initial: str | Wavefunction,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self._native = native
         self._D = D
+        self._molecule = molecule
+        self._initial = initial
 
     def __getstate__(self):
-        return super().__getstate__(), self._D
+        return (
+            super().__getstate__(),
+            self._D,
+            self._molecule.__getstate__(),
+            self._initial.__getstate__(),
+        )
 
     def __setstate__(self, serialized):
         super().__setstate__(serialized[0])
         self._D = serialized[1]
+
+        self._molecule = Molecule.__new__(Molecule)
+        self._molecule.__setstate__(serialized[2])
+
+        self._initial = Wavefunction.__new__(Wavefunction)
+        self._initial.__setstate__(serialized[3])
 
         self._molecule.native.basis = self._basis
         self._molecule.native.build()
@@ -81,9 +110,9 @@ class Wavefunction(Base, Object):
         return Wavefunction(
             solver,
             D,
-            molecule=molecule,
+            molecule,
+            scheme,
             basis=basis,
-            initial=scheme,
             origin="guess",
             time=end - start,
         )
@@ -119,9 +148,9 @@ class Wavefunction(Base, Object):
         return Wavefunction(
             solver,
             solver.make_rdm1(),
-            molecule=molecule,
+            molecule,
+            guess,
             basis=basis,
-            initial=guess,
             origin="calculation",
             time=end - start,
             converged=converged,

@@ -19,6 +19,14 @@ class Wavefunction(Base, Object):
     def native(self) -> Native:
         return self._native
 
+    @property
+    def molecule(self) -> Molecule:
+        return self._molecule
+
+    @property
+    def initial(self) -> str | Wavefunction:
+        return self._initial
+
     @timeable
     def overlap(self) -> Matrix:
         return Matrix(self._native.S())
@@ -43,18 +51,48 @@ class Wavefunction(Base, Object):
 
         return (Matrix(self._native.Fa()), Matrix(self._native.Fb()))
 
-    def __init__(self, native: Native, is_guess: bool, *args, **kwargs):
+    def __init__(
+        self,
+        native: Native,
+        molecule: Molecule,
+        initial: str | Wavefunction,
+        is_guess: bool,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self._native = native
+        self._molecule = molecule
+        self._initial = initial
         self._is_guess = is_guess
 
     def __getstate__(self):
-        return super().__getstate__(), self.native.to_file(), self._is_guess
+        return (
+            super().__getstate__(),
+            self._native.to_file(),
+            self._molecule.__getstate__(),
+            (
+                self._initial.__getstate__()
+                if isinstance(self._initial, Wavefunction)
+                else self._initial
+            ),
+            self._is_guess,
+        )
 
     def __setstate__(self, serialized):
         super().__setstate__(serialized[0])
         self._native = Native.from_file(serialized[1])
-        self._is_guess = serialized[2]
+
+        self._molecule = Molecule.__new__(Molecule)
+        self._molecule.__setstate__(serialized[2])
+
+        if isinstance(serialized[3], str):
+            self._initial = serialized[3]
+        else:
+            self._initial = Wavefunction.__new__(Wavefunction)
+            self._initial.__setstate__(serialized[3])
+
+        self._is_guess = serialized[4]
 
     @classmethod
     def guess(
@@ -88,10 +126,10 @@ class Wavefunction(Base, Object):
 
             return Wavefunction(
                 start_wfn,
+                molecule,
+                scheme,
                 True,
-                molecule=molecule,
                 basis=basis,
-                initial=scheme,
                 origin="guess",
                 time=end - start,
             )
@@ -144,10 +182,10 @@ class Wavefunction(Base, Object):
 
         return Wavefunction(
             wfn,
+            molecule,
+            guess,
             False,
-            molecule=molecule,
             basis=basis,
-            initial=guess,
             origin="calculation",
             time=end - start,
             converged=converged,

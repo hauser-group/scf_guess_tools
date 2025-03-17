@@ -14,16 +14,18 @@ class Wavefunction(Object, ABC):
         pass
 
     @property
+    @abstractmethod
     def molecule(self) -> Molecule:
-        return self._molecule
+        pass
 
     @property
     def basis(self) -> str:
         return self._basis
 
     @property
+    @abstractmethod
     def initial(self) -> str | Wavefunction:
-        return self._initial
+        pass
 
     @property
     def origin(self) -> str:
@@ -96,18 +98,14 @@ class Wavefunction(Object, ABC):
 
     def __init__(
         self,
-        molecule: Molecule,
         basis: str,
-        initial: str | Wavefunction,
         origin: str,
         time: float,
         converged: bool | None = None,
         stable: bool | None = None,
         second_order: bool | None = None,
     ):
-        self._molecule = molecule
         self._basis = basis
-        self._initial = initial
         self._origin = origin
         self._time = time
         self._converged = converged
@@ -117,9 +115,7 @@ class Wavefunction(Object, ABC):
     def __getstate__(self):
         return (
             Object.__getstate__(self),
-            self.molecule,
             self.basis,
-            self.initial,
             self.origin,
             self.time,
             self.converged,
@@ -131,9 +127,7 @@ class Wavefunction(Object, ABC):
         Object.__setstate__(self, serialized[0])
 
         (
-            self._molecule,
             self._basis,
-            self._initial,
             self._origin,
             self._time,
             self._converged,
