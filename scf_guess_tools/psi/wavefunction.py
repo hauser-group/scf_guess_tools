@@ -15,29 +15,52 @@ import re
 
 
 class Wavefunction(Base, Object):
+    """Wavefunction representation using the Psi4 backend. This class provides an
+    implementation of the Wavefunction interface using Psi4's native wavefunction format.
+    """
+
     @property
     def native(self) -> Native:
+        """The underlying Psi4 wavefunction object."""
         return self._native
 
     @property
     def molecule(self) -> Molecule:
+        """The molecule associated with this wavefunction."""
         return self._molecule
 
     @property
     def initial(self) -> str | Wavefunction:
+        """The initial guess, either as a string (guessing scheme) or another
+        wavefunction."""
         return self._initial
 
     @timeable
     def overlap(self) -> Matrix:
+        """Compute the overlap matrix.
+
+        Returns:
+            The overlap matrix.
+        """
         return Matrix(self._native.S())
 
     @timeable
     def core_hamiltonian(self) -> Matrix:
+        """Compute the core Hamiltonian matrix.
+
+        Returns:
+            The core Hamiltonian matrix.
+        """
         return Matrix(self.native.H())
 
     @timeable
     @tuplifyable
     def density(self) -> Matrix | tuple[Matrix, Matrix]:
+        """Compute the density matrix.
+
+        Returns:
+            A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+        """
         if self.molecule.singlet:
             return Matrix(self._native.Da())
 
@@ -46,6 +69,11 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
+        """Compute the Fock matrix.
+
+        Returns:
+            A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+        """
         if self.molecule.singlet:
             return Matrix(self._native.Fa())
 
@@ -56,17 +84,29 @@ class Wavefunction(Base, Object):
         native: Native,
         molecule: Molecule,
         initial: str | Wavefunction,
-        is_guess: bool,
         *args,
         **kwargs,
     ):
+        """Initialize the Psi4 wavefunction. Should not be used directly.
+
+        Args:
+            native: The Psi4 Wavefunction instance.
+            molecule: The molecule associated with the wavefunction.
+            initial: The initial guess, either as scheme or another wavefunction.
+            *args: Positional arguments to forward to the base class.
+            **kwargs: Keyword arguments to forward to the base class.
+        """
         super().__init__(*args, **kwargs)
         self._native = native
         self._molecule = molecule
         self._initial = initial
-        self._is_guess = is_guess
 
     def __getstate__(self):
+        """Return a serialized representation for pickling.
+
+        Returns:
+            The serialized wavefunction object.
+        """
         return (
             super().__getstate__(),
             self._native.to_file(),
@@ -76,10 +116,14 @@ class Wavefunction(Base, Object):
                 if isinstance(self._initial, Wavefunction)
                 else self._initial
             ),
-            self._is_guess,
         )
 
     def __setstate__(self, serialized):
+        """Restore the wavefunction from a serialized state.
+
+        Args:
+            serialized: The serialized wavefunction object.
+        """
         super().__setstate__(serialized[0])
         self._native = Native.from_file(serialized[1])
 
@@ -92,12 +136,20 @@ class Wavefunction(Base, Object):
             self._initial = Wavefunction.__new__(Wavefunction)
             self._initial.__setstate__(serialized[3])
 
-        self._is_guess = serialized[4]
-
     @classmethod
     def guess(
         cls, molecule: Molecule, basis: str, scheme: str | None = None
     ) -> Wavefunction:
+        """Create an initial wavefunction guess.
+
+        Args:
+            molecule: The molecule for which the wavefunction is created.
+            basis: The basis set.
+            scheme: The initial guess scheme. If None, the default scheme is used.
+
+        Returns:
+            The guessed wavefunction.
+        """
         start = process_time()
         scheme = "AUTO" if scheme is None else scheme
 
@@ -128,7 +180,6 @@ class Wavefunction(Base, Object):
                 start_wfn,
                 molecule,
                 scheme,
-                True,
                 basis=basis,
                 origin="guess",
                 time=end - start,
@@ -138,6 +189,19 @@ class Wavefunction(Base, Object):
     def calculate(
         cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
+        """Attempt to compute a converged wavefunction. Detect instabilities and
+        attempt to resolve them for the UHF case. Initially try first order HF, then
+        switch to second order HF with increasing number of microiterations until a
+        wavefunction is found to be both converged and stable.
+
+        Args:
+            molecule: The molecule for which the wavefunction is computed.
+            basis: The basis set.
+            guess: The initial guess, either as guessing scheme or another wavefunction.
+
+        Returns:
+            The computed wavefunction.
+        """
         start = process_time()
 
         guess = "AUTO" if guess is None else guess
@@ -184,7 +248,6 @@ class Wavefunction(Base, Object):
             wfn,
             molecule,
             guess,
-            False,
             basis=basis,
             origin="calculation",
             time=end - start,

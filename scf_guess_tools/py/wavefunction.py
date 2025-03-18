@@ -13,29 +13,52 @@ from time import process_time
 
 
 class Wavefunction(Base, Object):
+    """Wavefunction representation using the PySCF backend. This class provides an
+    implementation of the Wavefunction interface using PySCF's native wavefunction format.
+    """
+
     @property
     def native(self) -> Native:
+        """The underlying Psi4 wavefunction object."""
         return self._native
 
     @property
     def molecule(self) -> Molecule:
+        """The molecule associated with this wavefunction."""
         return self._molecule
 
     @property
     def initial(self) -> str | Wavefunction:
+        """The initial guess, either as a string (guessing scheme) or another
+        wavefunction."""
         return self._initial
 
     @timeable
     def overlap(self) -> Matrix:
+        """Compute the overlap matrix.
+
+        Returns:
+            The overlap matrix.
+        """
         return Matrix(self._native.get_ovlp())
 
     @timeable
     def core_hamiltonian(self) -> Matrix:
+        """Compute the core Hamiltonian matrix.
+
+        Returns:
+            The core Hamiltonian matrix.
+        """
         return Matrix(self.native.get_hcore())
 
     @timeable
     @tuplifyable
     def density(self) -> Matrix | tuple[Matrix, Matrix]:
+        """Compute the density matrix.
+
+        Returns:
+            A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+        """
         if self.molecule.singlet:
             return Matrix(self._D / 2)
 
@@ -44,6 +67,12 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
+        """Compute the Fock matrix.
+
+        Returns:
+            A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+        """
+
         F = self._native.get_fock(dm=self._D)
 
         if self.molecule.singlet:
@@ -60,6 +89,16 @@ class Wavefunction(Base, Object):
         *args,
         **kwargs,
     ):
+        """Initialize the PySCF wavefunction. Should not be used directly.
+
+        Args:
+            native: The PySCF solver instance.
+            D: The density matrix.
+            molecule: The molecule associated with the wavefunction.
+            initial: The initial guess, either as scheme or another wavefunction.
+            *args: Positional arguments to forward to the base class.
+            **kwargs: Keyword arguments to forward to the base class.
+        """
         super().__init__(*args, **kwargs)
         self._native = native
         self._D = D
@@ -67,6 +106,11 @@ class Wavefunction(Base, Object):
         self._initial = initial
 
     def __getstate__(self):
+        """Return a serialized representation for pickling.
+
+        Returns:
+            The serialized wavefunction object.
+        """
         return (
             super().__getstate__(),
             self._D,
@@ -79,6 +123,11 @@ class Wavefunction(Base, Object):
         )
 
     def __setstate__(self, serialized):
+        """Restore the wavefunction from a serialized state.
+
+        Args:
+            serialized: The serialized wavefunction object.
+        """
         super().__setstate__(serialized[0])
         self._D = serialized[1]
 
@@ -101,6 +150,17 @@ class Wavefunction(Base, Object):
     def guess(
         cls, molecule: Molecule, basis: str, scheme: str | None = None
     ) -> Wavefunction:
+        """Create an initial wavefunction guess.
+
+        Args:
+            molecule: The molecule for which the wavefunction is created.
+            basis: The basis set.
+            scheme: The initial guess scheme. If None, the default scheme is used.
+
+        Returns:
+            The guessed wavefunction.
+        """
+
         start = process_time()
 
         molecule.native.basis = basis
@@ -128,6 +188,19 @@ class Wavefunction(Base, Object):
     def calculate(
         cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:
+        """Attempt to compute a converged wavefunction. Detect instabilities and
+        attempt to resolve them for both RHF and UHF. Initially try first order HF, then
+        switch to second order HF with increasing number of microiterations until a
+        wavefunction is found to be both converged and stable.
+
+        Args:
+            molecule: The molecule for which the wavefunction is computed.
+            basis: The basis set.
+            guess: The initial guess, either as guessing scheme or another wavefunction.
+
+        Returns:
+            The computed wavefunction.
+        """
         start = process_time()
 
         molecule.native.basis = basis

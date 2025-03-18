@@ -5,8 +5,11 @@ import psi4
 
 
 class Object(Base):
+    """Base class for objects that use the Psi4 backend."""
+
     @classmethod
     def backend(cls) -> Backend:
+        """The backend associated with this object."""
         return Backend.PSI
 
 
@@ -26,6 +29,9 @@ output_file: str = None
 
 
 def reset():
+    """Reset the Psi4 backend output configuration. Ensures that the output directory
+    exists and sets the output file for Psi4.
+    """
     global output_directory
     global output_file
 
