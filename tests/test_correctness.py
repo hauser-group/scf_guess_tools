@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from common import equal, replace_random_digit, similar
+from common import equal, replace_random_digit, similar, tuplify
 from provider import context, backend, basis_fixture, path_fixture
 from scf_guess_tools import (
     Backend,
@@ -56,17 +56,30 @@ def test_core_guess(context, guess_path: str, guess_basis: str):
             )
             return
 
-    f_scores = [f_score(i, f) for i, f in zip(initials, finals)]
+    f_scores = []
+    for initial, final in zip(initials, finals):
+        f_scores.append(f_score(initial.overlap(), initial.density(), final.density()))
+
     assert similar(
         *f_scores, tolerance=tolerance
     ), f"core guesses must have similar f-scores {f_scores}"
 
-    diis_errors = [diis_error(i) for i in initials]
+    diis_errors = []
+    for initial, final in zip(initials, finals):
+        diis_errors.append(
+            diis_error(initial.overlap(), initial.density(), initial.fock())
+        )
+
     assert similar(
         *diis_errors, tolerance=tolerance
     ), f"core guesses must have similar diis errors {diis_errors}"
 
-    energy_errors = [energy_error(i, f) for i, f in zip(initials, finals)]
+    energy_errors = []
+    for initial, final in zip(initials, finals):
+        energy_errors.append(
+            energy_error(initial.electronic_energy(), final.electronic_energy())
+        )
+
     assert similar(
         *energy_errors, tolerance=tolerance
     ), f"core guesses must have similar energy errors {energy_errors}"
@@ -84,13 +97,13 @@ def test_converged(context, converged_path: str, converged_basis: str):
             )
             return
 
-        f = f_score(final, final)
+        f = f_score(final.overlap(), final.density(), final.density())
         assert 1 - f < 1e-10, "converged f-score must be close to 1"
 
-        d = diis_error(final)
+        d = diis_error(final.overlap(), final.density(), final.fock())
         assert d < 1e-5, "diis error must be close to 0"
 
-        e = energy_error(final, final)
+        e = energy_error(final.electronic_energy(), final.electronic_energy())
         assert e < 1e-10, "energy error must be close to 0"
 
     assert similar(
@@ -121,11 +134,13 @@ def test_metric(
         initial = guess(molecule, metric_basis, scheme)
 
         if metric == f_score:
-            scores.add(f_score(initial, final))
+            scores.add(f_score(initial.overlap(), initial.density(), final.density()))
         elif metric == diis_error:
-            scores.add(diis_error(initial))
+            scores.add(diis_error(initial.overlap(), initial.density(), initial.fock()))
         elif metric == energy_error:
-            scores.add(energy_error(initial, final))
+            scores.add(
+                energy_error(initial.electronic_energy(), final.electronic_energy())
+            )
         else:
             assert f"Unexpected metric {metric}"
 
@@ -138,7 +153,10 @@ def test_f_score(context, backend: Backend, metric_path: str, metric_basis: str)
     final = calculate(molecule, metric_basis)
 
     S = final.overlap()
-    DfS = tuple(Df @ S for Df in final.density(tuplify=True))
+    Df = final.density()
+
+    DfS = tuple(df @ S for df in tuplify(Df))
+    DfS = DfS if isinstance(Df, tuple) else DfS[0]
 
     if not final.converged or not final.stable:
         warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
@@ -147,8 +165,8 @@ def test_f_score(context, backend: Backend, metric_path: str, metric_basis: str)
     for scheme in guessing_schemes(backend):
         initial = guess(molecule, metric_basis, scheme)
 
-        regular = f_score(initial, final)
-        boosted = f_score(initial, DfS=DfS)
+        regular = f_score(S, initial.density(), Df)
+        boosted = f_score(S, initial.density(), DfS, skip_final_overlap=True)
 
         assert np.isclose(
             regular, boosted, rtol=1e-10
