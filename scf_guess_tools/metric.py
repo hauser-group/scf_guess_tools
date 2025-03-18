@@ -1,27 +1,22 @@
 from __future__ import annotations
 
 from .common import timeable, tuplify
-from .wavefunction import Wavefunction
 from .matrix import Matrix
 from math import sqrt
 
 
 @timeable
 def f_score(
-    initial: Wavefunction,
-    final: Wavefunction | None = None,
-    DfS: Matrix | tuple[Matrix, Matrix] | None = None,
+    overlap: Matrix,
+    initial_density: Matrix | tuple[Matrix, Matrix],
+    final_density: Matrix | tuple[Matrix, Matrix],
+    skip_final_overlap: bool = False,
 ) -> float:
-    assert final is not None or DfS is not None
+    S = overlap
+    DiS = [di @ S for di in tuplify(initial_density)]
+    DfS = [df if skip_final_overlap else df @ S for df in tuplify(final_density)]
 
-    S = initial.overlap()
-
-    if DfS is None:
-        DfS = [df @ S for df in final.density(tuplify=True)]
-    else:
-        DfS = tuplify(DfS)
-
-    Q = [(di @ S @ dfs).trace for di, dfs in zip(initial.density(tuplify=True), DfS)]
+    Q = [(dis @ dfs).trace for dis, dfs in zip(DiS, DfS)]
     N = [dfs.trace for dfs in DfS]
 
     return sum(Q) / sum(N)
@@ -29,14 +24,13 @@ def f_score(
 
 @timeable
 def diis_error(
-    initial: Wavefunction,
-    final: Wavefunction | None = None,
-    use_final_fock: bool = False,
+    overlap: Matrix,
+    density: Matrix | tuple[Matrix, Matrix],
+    fock: Matrix | tuple[Matrix, Matrix],
 ) -> float:
-
-    S = initial.overlap()
-    D = initial.density(tuplify=True)
-    F = final.fock(tuplify=True) if use_final_fock else initial.fock(tuplify=True)
+    S = overlap
+    D = tuplify(density)
+    F = tuplify(fock)
     E = [f @ d @ S - S @ d @ f for d, f in zip(D, F)]
 
     return sqrt(sum(e.sum_of_squares for e in E) / sum(e.size for e in E))
@@ -44,7 +38,6 @@ def diis_error(
 
 @timeable
 def energy_error(
-    initial: Wavefunction, final: Wavefunction, use_final_fock: bool = False
+    initial_electronic_energy: float, final_electronic_energy: float
 ) -> float:
-    F = final.fock() if use_final_fock else initial.fock()
-    return initial.electronic_energy(fock=F) / final.electronic_energy(fock=F) - 1.0
+    return initial_electronic_energy / final_electronic_energy - 1.0

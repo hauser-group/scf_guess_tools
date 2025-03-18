@@ -28,7 +28,7 @@ class Matrix(Base, Object):
 
     @property
     def numpy(self) -> NDArray:
-        return self.native.to_array(dense=True)
+        return self.native.to_array(dense=False)
 
     def __init__(self, native: Native):
         self._native = native
@@ -37,10 +37,11 @@ class Matrix(Base, Object):
         return "\n".join([irrep.__repr__() for irrep in self.native.nph])
 
     def __getstate__(self):
-        raise NotImplementedError()
+        return super().__getstate__(), self._native.to_serial()
 
     def __setstate__(self, serialized):
-        raise NotImplementedError()
+        super().__setstate__(serialized[0])
+        self._native = Native.from_serial(serialized[1])
 
     def __add__(self, other: Matrix) -> Matrix:
         result = self.native.clone()
@@ -56,3 +57,7 @@ class Matrix(Base, Object):
 
     def __matmul__(self, other: Matrix) -> Matrix:
         return Matrix(doublet(self.native, other.native))
+
+    @classmethod
+    def build(cls, array: NDArray) -> Matrix:
+        return Matrix(Native.from_array(array))

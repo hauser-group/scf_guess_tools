@@ -33,6 +33,8 @@ def replace_random_digit(original: str, modified: str):
 
 
 def equal_matrices(a: Matrix, b: Matrix) -> bool:
+    assert a.backend() == b.backend()
+
     if isinstance(a, PsiMatrix) and isinstance(b, PsiMatrix):
         for lhs, rhs in zip(a.native.nph, b.native.nph):
             if not np.allclose(lhs, rhs, rtol=1e-6, atol=1e-6):
@@ -44,6 +46,7 @@ def equal_matrices(a: Matrix, b: Matrix) -> bool:
 
 
 def equal_molecules(a: Molecule, b: Molecule, ignore: list[str] | None = None) -> bool:
+    assert a.backend() == b.backend()
     ignore = ignore or []
 
     properties = [
@@ -69,6 +72,7 @@ def equal_molecules(a: Molecule, b: Molecule, ignore: list[str] | None = None) -
 def equal_wavefunctions(
     a: Wavefunction, b: Wavefunction, ignore: list[str] | None = None
 ) -> bool:
+    assert a.backend() == b.backend()
     ignore = ignore or []
 
     properties = [

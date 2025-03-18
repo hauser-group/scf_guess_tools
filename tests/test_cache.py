@@ -5,6 +5,7 @@ from provider import context, backend, basis_fixture, path_fixture
 from scf_guess_tools import (
     Backend,
     load,
+    build,
     guess,
     calculate,
     cache,
@@ -19,6 +20,7 @@ import pytest
 basis = basis_fixture(["sto-3g", "pcseg-0"])
 caching_path = path_fixture()
 molecule_path = path_fixture()
+matrix_path = path_fixture(max_atoms=7)
 wavefunction_path = path_fixture(max_atoms=7)
 
 
@@ -119,7 +121,54 @@ def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool)
         (backend, builder, scheme, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
-        for scheme in [None] + guessing_schemes(backend)
+        for scheme in [None, *guessing_schemes(backend)][::2]
+        for symmetry in [True, False]
+    ],
+)
+def test_matrix(
+    context,
+    backend: Backend,
+    matrix_path: str,
+    basis: str,
+    scheme: str,
+    builder: Callable,
+    symmetry: bool,
+):
+    molecule = load(matrix_path, backend, symmetry=symmetry)
+    wavefunction = builder(molecule, basis, scheme)
+
+    matrices = [wavefunction.overlap(), wavefunction.core_hamiltonian()]
+    matrices.extend(wavefunction.density(tuplify=True))
+    matrices.extend(wavefunction.fock(tuplify=True))
+
+    for matrix in matrices:
+        clear_cache()
+        invocations = 0
+
+        @cache()
+        def f(m):
+            nonlocal invocations
+            invocations += 1
+
+            return m
+
+        assert equal(f(matrix), matrix), "properties of matrix must not change"
+        assert invocations == 1, "function must be invoked for non-cached matrix"
+
+        assert equal(f(matrix), matrix), "properties of matrix must not change"
+        assert invocations == 1, "function must not be invoked for cached matrix"
+
+        new = build(matrix.numpy, backend)
+        assert equal(new, matrix), "properties of matrix must not change"
+
+
+@pytest.mark.parametrize(
+    "backend, builder, scheme, symmetry",
+    [
+        (backend, builder, scheme, symmetry)
+        for backend in [Backend.PSI, Backend.PY]
+        for builder in [guess, calculate]
+        for scheme in [None, *guessing_schemes(backend)][::2]
         for symmetry in [True, False]
     ],
 )
