@@ -41,12 +41,12 @@ description of available features please refer to the in-source documentation.
 
 
 ```python
-from scf_guess_tools import Backend, load, guess, calculate, guessing_schemes
+from scf_guess_tools import Backend, load, build, guess, calculate, guessing_schemes
 from scf_guess_tools import f_score, diis_error, energy_error
 
 backend = Backend.PY # or Backend.PSI
 
-molecule = load("ch3.xyz", backend, symmetry=True)
+molecule = load("ch3.xyz", backend, symmetry=False)
 print(f"molecule name: {molecule.name}")
 print(f"molecule charge: {molecule.charge}")
 print(f"molecule multiplicity: {molecule.multiplicity}")
@@ -68,14 +68,24 @@ for density in final.density(tuplify=True):
 for scheme in guessing_schemes(backend):
     initial = guess(molecule, "pcseg-0", scheme)
 
-    f = f_score(initial, final)
+    f = f_score(initial.overlap(), initial.density(), final.density())
     print(f"f-score: {f}")
 
-    d = diis_error(initial)
+    d = diis_error(initial.overlap(), initial.density(), initial.fock())
     print(f"DIIS error: {d}")
 
-    e = energy_error(initial, final)
+    e = energy_error(initial.electronic_energy(), final.electronic_energy())
     print(f"energy error: {e}")
+
+import numpy as np
+
+# We can also build matrices from arbitrary numpy arrays
+original = initial.density(tuplify=True)[0]
+array = np.random.rand(*original.numpy.shape)
+matrix = build(array, backend)
+
+f = f_score(initial.overlap(), matrix, final.density())
+print(f"f-score of random unnormalized density: {f}")
 ```
 
 ### Caching
@@ -84,6 +94,11 @@ Caching of function results to disk is supported via `joblib.Memory`. To enable
 it, you can pass `cache=True` to the `load`, `guess` and `calculate` functions.
 You can also cache your own functions by applying the provided `@cache`
 annotation.
+
+Warning: `Molecule`, `Wavefunction` and `Matrix` instances might exhibit
+floating  point fluctuations upon serialization and de-serialization. This can
+cause semantically equivalent objects to hash to different keys. It is
+recommended to use basic datatypes as parameters for cached functions.
 
 ```python
 from scf_guess_tools import Backend, Wavefunction, load, guess, calculate, f_score
@@ -98,7 +113,7 @@ final = calculate(molecule, "pcseg-0", initial, cache=True)
 @cache(ignore=["debug"]) # exclude debug from hash key
 def score(initial: Wavefunction, final: Wavefunction, debug: bool) -> float:
     print(f"debug: {debug}")
-    return f_score(initial, final)
+    return f_score(initial.overlap(), initial.density(), final.density())
 
 f1 = score(initial, final, debug=True) # invokes the function
 f2 = score(initial, final, debug=False) # returns cached result
@@ -127,7 +142,7 @@ print(f"calculating took {calculate_time} s")
 final, calculate_time = calculate(molecule, "pcseg-0", initial, cache=True, time=True)
 print(f"cached calculation took {calculate_time} s")
 
-f, score_time = f_score(initial, final, time=True)
+f, score_time = f_score(initial.overlap(), initial.density(), final.density(), time=True)
 print(f"scoring took {score_time} s")
 ```
 
