@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from .core import Object
 from abc import ABC, abstractmethod
-from numpy.typing import Any, NDArray
+from numpy.typing import NDArray
+from typing import Any
 
 
 class Matrix(Object, ABC):
