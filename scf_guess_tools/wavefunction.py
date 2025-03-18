@@ -128,11 +128,16 @@ class Wavefunction(Object, ABC):
         F = self.fock() if fock is None else fock
 
         if self.molecule.singlet:
+            # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
+
             result = (F + H) @ D
             return result.trace
         else:
+            # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3c_unrestricted-hartree-fock.ipynb
+
             Da, Db = D
             Fa, Fb = F
+
             terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [H, Fa, Fb])]
             return 0.5 * sum(terms)
 
