@@ -71,7 +71,11 @@ class Wavefunction(Base, Object):
             super().__getstate__(),
             self._D,
             self._molecule.__getstate__(),
-            self._initial.__getstate__(),
+            (
+                self._initial.__getstate__()
+                if isinstance(self._initial, Wavefunction)
+                else self._initial
+            ),
         )
 
     def __setstate__(self, serialized):
@@ -81,8 +85,11 @@ class Wavefunction(Base, Object):
         self._molecule = Molecule.__new__(Molecule)
         self._molecule.__setstate__(serialized[2])
 
-        self._initial = Wavefunction.__new__(Wavefunction)
-        self._initial.__setstate__(serialized[3])
+        if isinstance(serialized[3], str):
+            self._initial = serialized[3]
+        else:
+            self._initial = Wavefunction.__new__(Wavefunction)
+            self._initial.__setstate__(serialized[3])
 
         self._molecule.native.basis = self._basis
         self._molecule.native.build()
@@ -149,7 +156,7 @@ class Wavefunction(Base, Object):
             solver,
             solver.make_rdm1(),
             molecule,
-            guess,
+            solver.init_guess if guess is None else guess,
             basis=basis,
             origin="calculation",
             time=end - start,
