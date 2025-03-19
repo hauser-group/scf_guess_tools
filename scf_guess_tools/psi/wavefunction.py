@@ -187,7 +187,12 @@ class Wavefunction(Base, Object):
 
     @classmethod
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
+        cls,
+        molecule: Molecule,
+        basis: str,
+        method: str = "hf",
+        guess: str | Wavefunction | None = None,
+        functional: str | None = None,
     ) -> Wavefunction:
         """Attempt to compute a converged wavefunction. Detect instabilities and
         attempt to resolve them for the UHF case. Initially try first order HF, then
@@ -197,7 +202,9 @@ class Wavefunction(Base, Object):
         Args:
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
-            guess: The initial guess, either as guessing scheme or another wavefunction.
+            method (optional): The calculation method to use (hf, dft)
+            guess (optional): The initial guess, either as guessing scheme or another wavefunction.
+            functional (optional): The functional to use for dft calculations
 
         Returns:
             The computed wavefunction.
@@ -216,10 +223,16 @@ class Wavefunction(Base, Object):
 
         def calculate(second_order: bool, so_max_iterations: int | None = None):
             with clean_context():
-                _, wfn = _hartree_fock(
-                    molecule, guess_str, basis, second_order, so_max_iterations
+                _, wfn = _scf_calculation(
+                    molecule,
+                    guess_str,
+                    basis,
+                    method,
+                    functional,
+                    second_order,
+                    so_max_iterations,
                 )
-                converged, stable = _analyze_output(output_file)
+                converged, stable = _analyze_output(output_file, method)
                 return wfn, converged, stable
 
         wfn, converged, stable, second_order = None, False, False, False
@@ -230,17 +243,25 @@ class Wavefunction(Base, Object):
 
             if not satisfied():
                 raise RuntimeError()
+        except (
+            psi4.driver.p4util.exceptions.ValidationError
+        ) as e:  # method might not support Validation
+            print(f"Validation Error: {e} - ")
+
         except:
             second_order = True
             so_max_iterations = 5
 
-            while not satisfied() and so_max_iterations <= 50:
-                try:
-                    wfn, converged, stable = calculate(second_order, so_max_iterations)
-                except psi4.SCFConvergenceError as e:
-                    wfn = e.wfn
+            if method != "dft":  # no second order corrections implemented for DFT
+                while not satisfied() and so_max_iterations <= 50:
+                    try:
+                        wfn, converged, stable = calculate(
+                            second_order, so_max_iterations
+                        )
+                    except psi4.SCFConvergenceError as e:
+                        wfn = e.wfn
 
-                so_max_iterations += 5
+                    so_max_iterations += 5
 
         end = process_time()
 
@@ -253,17 +274,39 @@ class Wavefunction(Base, Object):
             time=end - start,
             converged=converged,
             stable=stable,
-            second_order=second_order,
+            second_order=(
+                second_order if method == "hf" else None
+            ),  # second order not implemented for DFT
         )
 
 
-def _hartree_fock(
+def _scf_calculation(
     molecule: Molecule,
     guess: str,
     basis: str,
-    second_order: bool,
-    so_max_iterations: int | None,
+    method: str = "hf",
+    functional: str | None = None,
+    second_order: bool = False,
+    so_max_iterations: int | None = None,
 ) -> tuple[float, Native]:
+    """
+    Run an SCF calculation (Hartree-Fock or DFT) using Psi4.
+
+    Args:
+        molecule: The molecule to compute.
+        guess: Initial guess method.
+        basis: Basis set.
+        method: "hf" for Hartree-Fock, "dft" for Density Functional Theory.
+        functional: The exchange-correlation functional (only for DFT).
+        second_order: Enable second-order SCF.
+        so_max_iterations: Maximum iterations for second-order SCF.
+
+    Returns:
+        A tuple (energy, wavefunction).
+    """
+    if method not in ("hf", "dft"):
+        raise ValueError(f"Unsupported method: {method}")
+
     options = {
         "BASIS": basis,
         "REFERENCE": "RHF" if molecule.singlet else "UHF",
@@ -272,8 +315,22 @@ def _hartree_fock(
         # because stability analysis is not available for density fitted
         # RHF wave functions:
         "SCF_TYPE": "PK",
-        "STABILITY_ANALYSIS": "CHECK" if molecule.singlet else "FOLLOW",
     }
+
+    if method == "dft":
+        if functional is None:
+            functional = "B3LYP"  # Default to B3LYP if not provided
+            import warnings
+
+            warnings.warn(
+                "DFT functional was not provided. Defaulting to 'B3LYP'.", UserWarning
+            )
+        #! maybe add later
+        # options["DFT_SPHERICAL_POINTS"] = 590
+        # options["DFT_RADIAL_POINTS"] = 99
+
+    elif method == "hf":
+        options["STABILITY_ANALYSIS"] = "CHECK" if molecule.singlet else "FOLLOW"
 
     if second_order:
         options["SOSCF"] = True
@@ -281,14 +338,20 @@ def _hartree_fock(
 
     psi4.set_options(options)
 
-    return psi4.energy("hf", molecule=molecule.native, return_wfn=True)
+    return psi4.energy(
+        "hf" if method == "hf" else functional,
+        molecule=molecule.native,
+        return_wfn=True,
+    )
 
 
-def _analyze_output(stdout_file: str) -> tuple[bool, bool]:
+def _analyze_output(stdout_file: str, method: str) -> tuple[bool, bool]:
     converged, stable = None, None
 
     with open(stdout_file, "r") as output:
-        for line in output:
+        output_lines = output.readlines()
+
+        for line in output_lines:
             line = line.lower()
 
             if "unable to find file" in line:
@@ -300,10 +363,13 @@ def _analyze_output(stdout_file: str) -> tuple[bool, bool]:
             elif "wavefunction stable" in line:
                 stable = True
             elif "lowest singlet (rhf->rhf) stability eigenvalues:" in line:
-                stable = _analyze_stability_eigenvalues(output)
+                stable = _analyze_stability_eigenvalues(output_lines)
 
     if converged is None or stable is None:
-        raise RuntimeError("Unable to determine convergence and stability")
+        if method == "hf":
+            raise RuntimeError("Unable to determine convergence or stability for HF")
+        elif method == "dft" and converged is None:
+            raise RuntimeError("Unable to determine convergence for DFT")
 
     return converged, stable
 
