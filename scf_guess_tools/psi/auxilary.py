@@ -1,4 +1,6 @@
 from contextlib import contextmanager
+from .core import output_directory, output_file
+import os
 
 import psi4
 
@@ -22,6 +24,11 @@ def clean_context():
         finally:
             psi4.core.clean_options()
             psi4.core.clean()
+            if os.path.exists(output_file):
+                os.remove(output_file)
+                psi4.set_output_file(
+                    output_file, append=False, execute=True, print_header=False
+                )
 
     if exception is not None:
         raise exception
