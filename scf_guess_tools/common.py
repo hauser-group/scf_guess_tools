@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+from .core import cache_directory
 from functools import wraps
+from pathlib import Path
 from time import process_time
 from typing import Any, Callable
+
+import inspect
+import joblib
+import logging
+import pickle
 
 
 def tuplify(object: Any) -> tuple:
@@ -73,3 +80,122 @@ def timeable(function: Callable) -> Callable:
         return (result, duration) if time else result
 
     return wrapper
+
+
+def cache(
+    directory: str | None = None, ignore: list[str] | None = None, enable: bool = True
+):
+    """Store calculated functions in a cache directory and reload them if the function
+    is invoked with the same set of parameters.
+
+    Args:
+        directory: The cache directory to store the calculated results in. If None, use
+            the SGT_CACHE_DIR environment variable.
+        ignore: A list of functions arguments (e.g. cls, self, verbose) to exclude from
+            the hash key.
+        enable: Whether caching is enabled by default.
+
+    Returns:
+        The wrapped function with caching functionality.
+    """
+    ignore = ignore or []
+
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, cache: bool | str = enable, **kwargs):
+            if cache == False:
+                return function(*args, **kwargs)
+            elif cache == True:
+                cache = directory
+
+            cache = cache or cache_directory(throw=True)
+            base = Path(cache) / f"{function.__module__}.{function.__qualname__}"
+
+            signature = inspect.signature(function)
+            arguments = signature.bind(*args, **kwargs)
+            arguments.apply_defaults()
+
+            parameters = {}
+
+            for key, value in arguments.arguments.items():
+                if key in ignore:
+                    continue
+
+                try:
+                    parameters[key] = hash(value)
+                except Exception as e:
+                    logging.warning(
+                        (
+                            f"Unable to hash cached function parameter {key}, "
+                            f"falling back to joblib.hash: {e}"
+                        )
+                    )
+
+                    parameters[key] = joblib.hash(value)
+
+            key = joblib.hash(parameters)
+            result_available, result = None, None
+            bucket = 1
+
+            while result_available is None:
+                parameters_file = base / f"{key}.parameters.{bucket}.pkl"
+                result_file = base / f"{key}.result.{bucket}.pkl"
+
+                if not parameters_file.is_file() or not result_file.is_file():
+                    result_available = False
+                    break
+
+                with parameters_file.open("rb") as file:
+                    loaded_parameters = pickle.load(file)
+
+                if loaded_parameters == parameters:
+                    with result_file.open("rb") as file:
+                        result = pickle.load(file)
+                        result_available = True
+
+                bucket += 1
+
+            if result_available:
+                logging.info(
+                    f"Returning cached result of function {function.__qualname__}"
+                    f"({arguments.arguments})"
+                )
+
+                return result
+
+            logging.info(
+                f"Invoking cached function {function.__qualname__}"
+                f"({arguments.arguments})"
+            )
+
+            base.mkdir(parents=True, exist_ok=True)
+
+            result = function(*args, **kwargs)
+            bucket = 1
+
+            while True:
+                parameters_file = base / f"{key}.parameters.{bucket}.pkl"
+                result_file = base / f"{key}.result.{bucket}.pkl"
+
+                if not parameters_file.is_file():
+                    with parameters_file.open("wb") as file:
+                        pickle.dump(parameters, file)
+
+                    with result_file.open("wb") as file:
+                        pickle.dump(result, file)
+
+                    break
+
+                with parameters_file.open("rb") as file:
+                    loaded_parameters = pickle.load(file)
+
+                assert loaded_parameters != parameters
+
+                logging.info(f"Hash collision detected for bucket {bucket}")
+                bucket += 1
+
+            return result
+
+        return wrapper
+
+    return decorator
