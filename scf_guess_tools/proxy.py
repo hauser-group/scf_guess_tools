@@ -120,6 +120,8 @@ def calculate(
     molecule: Molecule,
     basis: str,
     initial: str | Wavefunction | None = None,
+    method: str = "hf",
+    functional: str | None = None,
     cache=False,
     time=False,
     **kwargs,
@@ -131,6 +133,8 @@ def calculate(
         basis: The basis set.
         initial: The initial guess. Can be one of guessing_schemes(backend) or another
             Wavefunction instance. If None, the backend's default guessing scheme is used.
+        method: The calculation method to use (hf, dft)
+        functional: The functional to use for dft calculations
         cache: Whether to cache the result on disk.
         time: Whether to return execution time as a tuple (result, time).
         **kwargs: Additional arguments forwarded to the backend's Wavefunction.calculate()
@@ -145,6 +149,8 @@ def calculate(
         time,
         molecule,
         basis,
+        method,
         initial,
+        functional,
         **kwargs,
     )

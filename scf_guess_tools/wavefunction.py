@@ -61,6 +61,16 @@ class Wavefunction(Object, ABC):
         instabilities."""
         return self._second_order
 
+    @property
+    def functional(self) -> str | None:
+        """The functional used if the calculation was started with method=dft (e.g., 'PBE', 'B3LYP')"""
+        return self._functional
+
+    @property
+    def method(self) -> str | None:
+        """The method used to calculate the wavefunction ('hf' or 'dft')"""
+        return self._method
+
     @abstractmethod
     @timeable
     def overlap(self) -> Matrix:
@@ -149,6 +159,8 @@ class Wavefunction(Object, ABC):
         converged: bool | None = None,
         stable: bool | None = None,
         second_order: bool | None = None,
+        functional: str | None = None,
+        method: str | None = None,
     ):
         """Initialize the wavefunction. Should not be used directly.
 
@@ -167,6 +179,8 @@ class Wavefunction(Object, ABC):
         self._converged = converged
         self._stable = stable
         self._second_order = second_order
+        self._functional = functional
+        self._method = method
 
     def __getstate__(self):
         """Return a serialized representation for pickling.
@@ -182,6 +196,8 @@ class Wavefunction(Object, ABC):
             self.converged,
             self.stable,
             self.second_order,
+            self.method,
+            self.functional,
         )
 
     def __setstate__(self, serialized):
@@ -199,4 +215,6 @@ class Wavefunction(Object, ABC):
             self._converged,
             self._stable,
             self._second_order,
+            self._method,
+            self._functional,
         ) = serialized[1:]
