@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..common import timeable, tuplifyable
+from ..common import cache, timeable, tuplifyable
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
 from .core import Object, output_file
@@ -137,6 +137,8 @@ class Wavefunction(Base, Object):
             self._initial.__setstate__(serialized[3])
 
     @classmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
     def guess(
         cls, molecule: Molecule, basis: str, scheme: str | None = None
     ) -> Wavefunction:
@@ -186,6 +188,8 @@ class Wavefunction(Base, Object):
             )
 
     @classmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
     def calculate(
         cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:

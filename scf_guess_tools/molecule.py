@@ -4,6 +4,8 @@ from .core import Object
 from abc import ABC, abstractmethod
 from typing import Any
 
+import joblib
+
 
 class Molecule(Object, ABC):
     """Provides a common interface for molecules across different backends."""
@@ -54,3 +56,11 @@ class Molecule(Object, ABC):
     def symmetry(self) -> bool:
         """Whether symmetry is enabled."""
         pass
+
+    def __hash__(self) -> int:
+        """Return a deterministic hash.
+
+        Returns:
+            A hash value uniquely identifying the molecule.
+        """
+        return int(joblib.hash((self.backend(), self.__getstate__())), 16)

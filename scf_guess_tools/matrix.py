@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from numpy.typing import NDArray
 from typing import Any
 
+import joblib
+
 
 class Matrix(Object, ABC):
     """Provides a common interface for matrix representations across different
@@ -45,6 +47,14 @@ class Matrix(Object, ABC):
     def __repr__(self) -> str:
         """String representation of the matrix."""
         pass
+
+    def __hash__(self) -> int:
+        """Return a deterministic hash.
+
+        Returns:
+            A hash value uniquely identifying the matrix.
+        """
+        return int(joblib.hash((self.backend(), self.__getstate__())), 16)
 
     @abstractmethod
     def __add__(self, other: Matrix) -> Matrix:

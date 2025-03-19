@@ -7,6 +7,8 @@ from .molecule import Molecule
 from abc import ABC, abstractmethod
 from typing import Any
 
+import joblib
+
 
 class Wavefunction(Object, ABC):
     """Provides a common interface for wavefunctions across different backends."""
@@ -167,6 +169,29 @@ class Wavefunction(Object, ABC):
         self._converged = converged
         self._stable = stable
         self._second_order = second_order
+
+    def __hash__(self) -> int:
+        """Return a deterministic hash.
+
+        Returns:
+            A hash value uniquely identifying the wavefunction.
+        """
+        identity = (
+            self.backend(),
+            self.molecule.__hash__(),
+            self.basis,
+            (
+                self.initial.__hash__()
+                if isinstance(self.initial, Object)
+                else joblib.hash(self.initial)
+            ),
+            self.origin,
+            self.converged,
+            self.stable,
+            self.second_order,
+        )
+
+        return int(joblib.hash(identity), 16)
 
     def __getstate__(self):
         """Return a serialized representation for pickling.
