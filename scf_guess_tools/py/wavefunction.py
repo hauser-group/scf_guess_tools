@@ -292,9 +292,10 @@ def _scf_calculation(
 
     if method == "dft":
         if not functional:
-            functional = "B3LYP"
+            functional = "B3LYPG"
             warnings.warn(
-                "DFT functional was not provided. Defaulting to 'B3LYP'.", UserWarning
+                "DFT functional was not provided. Defaulting to 'B3LYPG (Gaussian Version)'.",
+                UserWarning,
             )
         solver.xc = functional  # Set functional for DFT
 
@@ -317,49 +318,6 @@ def _scf_calculation(
         mo, _, stable, _ = solver.stability(**stability_options)
 
         retries = 0
-        while not molecule.singlet and not stable and retries < 15:
-            dm = solver.make_rdm1(mo, solver.mo_occ)
-            solver = solver.run(dm)
-            mo, _, stable, _ = solver.stability(**stability_options)
-            retries += 1
-
-    return solver, converged, stable
-
-
-def _hartree_fock(
-    molecule: Molecule,
-    guess: str,
-    basis: str,
-    second_order: bool,
-    so_max_iterations: int | None,
-) -> tuple[Native, bool, bool]:
-    method = RHF if molecule.singlet else UHF
-    solver = method(molecule.native)
-
-    if second_order:
-        solver = solver.newton()
-        solver.max_cycle_inner = so_max_iterations
-
-    guess = solver.init_guess if guess is None else guess
-
-    if isinstance(guess, str):
-        assert guess in guessing_schemes
-        solver.run(init_guess=guess)
-    else:
-        solver.kernel(dm0=guess._D)
-
-    converged, stable = solver.converged, False
-
-    if converged:
-        stability_options = {
-            "internal": True,
-            "external": False,
-            "return_status": True,
-        }
-
-        mo, _, stable, _ = solver.stability(**stability_options)
-        retries = 0
-
         while not molecule.singlet and not stable and retries < 15:
             dm = solver.make_rdm1(mo, solver.mo_occ)
             solver = solver.run(dm)
