@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..molecule import Molecule as Base
+from ..common import timeable
 from .core import Object
 from psi4.core import Molecule as Native
 from typing import overload
@@ -78,6 +79,7 @@ class Molecule(Base, Object):
         self._symmetry = serialized[3]
 
     @classmethod
+    @timeable
     def load(cls, path: str, symmetry: bool = True) -> Molecule:
         """Load a molecule from an xyz file.
 
