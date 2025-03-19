@@ -233,6 +233,7 @@ class Wavefunction(Base, Object):
                     so_max_iterations,
                 )
                 converged, stable = _analyze_output(output_file, method)
+
                 return wfn, converged, stable
 
         wfn, converged, stable, second_order = None, False, False, False
@@ -304,6 +305,7 @@ def _scf_calculation(
     Returns:
         A tuple (energy, wavefunction).
     """
+
     if method not in ("hf", "dft"):
         raise ValueError(f"Unsupported method: {method}")
 

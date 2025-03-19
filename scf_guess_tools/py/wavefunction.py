@@ -311,7 +311,7 @@ def _scf_calculation(
     else:
         solver.kernel(dm0=guess._D)
 
-    converged, stable = solver.converged, False
+    converged, stable = solver.converged, False if method == "hf" else None
 
     if converged and method == "hf":  # Stability analysis is only relevant for HF
         stability_options = {"internal": True, "external": False, "return_status": True}
