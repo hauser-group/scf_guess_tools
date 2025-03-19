@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from .core import Object
+from .common import timeable
+from .core import Backend, Object
+from .proxy import proxy
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any
 
 import joblib
@@ -64,3 +67,24 @@ class Molecule(Object, ABC):
             A hash value uniquely identifying the molecule.
         """
         return int(joblib.hash((self.backend(), self.__getstate__())), 16)
+
+    @classmethod
+    @abstractmethod
+    @timeable
+    def load(cls, path: str, symmetry: bool = True, **kwargs) -> Molecule:
+        """Load a molecule from an xyz file.
+
+        Args:
+            path: The path to the xyz file.
+            symmetry: Whether to enable symmetry.
+            **kwargs: Additional backend-specific keyword arguments.
+
+        Returns:
+            The loaded molecule.
+        """
+        pass
+
+
+@wraps(Molecule.load)
+def load(path: str, backend: Backend, **kwargs):
+    return proxy(backend, lambda p: p.Molecule.load, path, **kwargs)

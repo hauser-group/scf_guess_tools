@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from .core import Object
+from .proxy import proxy
 from abc import ABC, abstractmethod
+from functools import wraps
 from numpy.typing import NDArray
 from typing import Any
 
@@ -73,6 +75,19 @@ class Matrix(Object, ABC):
 
     @classmethod
     @abstractmethod
-    def build(cls, array: NDArray) -> Matrix:
-        """Constructs a matrix from a NumPy array."""
+    def build(cls, array: NDArray, **kwargs) -> Matrix:
+        """Build a matrix from a NumPy array.
+
+        Args:
+            array: The NumPy array.
+            **kwargs: Additional backend-specific keyword arguments.
+
+        Returns:
+            The constructed matrix.
+        """
         pass
+
+
+@wraps(Matrix.build)
+def build(array: NDArray, backend: Backend, **kwargs):
+    return proxy(backend, lambda p: p.Matrix.build, array, **kwargs)
