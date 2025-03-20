@@ -116,11 +116,12 @@ def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool)
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, symmetry",
+    "backend, builder, method, scheme, symmetry",
     [
-        (backend, builder, scheme, symmetry)
+        (backend, builder, method, scheme, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
+        for method in ["hf", "dft"]
         for scheme in [None, *guessing_schemes(backend)][::2]
         for symmetry in [True, False]
     ],
@@ -130,12 +131,16 @@ def test_matrix(
     backend: Backend,
     matrix_path: str,
     basis: str,
-    scheme: str,
     builder: Callable,
+    method: str,
+    scheme: str,
     symmetry: bool,
 ):
     molecule = load(matrix_path, backend, symmetry=symmetry)
-    wavefunction = builder(molecule, basis, scheme)
+    if builder == guess:
+        wavefunction = guess(molecule, basis, scheme)
+    else:
+        wavefunction = calculate(molecule, basis, scheme, method=method)
 
     matrices = [wavefunction.overlap(), wavefunction.core_hamiltonian()]
     matrices.extend(wavefunction.density(tuplify=True))
@@ -163,11 +168,12 @@ def test_matrix(
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, symmetry",
+    "backend, builder, method, scheme, symmetry",
     [
-        (backend, builder, scheme, symmetry)
+        (backend, builder, method, scheme, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
+        for method in ["hf", "dft"]
         for scheme in [None, *guessing_schemes(backend)][::2]
         for symmetry in [True, False]
     ],
@@ -178,11 +184,15 @@ def test_wavefunction(
     wavefunction_path: str,
     basis: str,
     scheme: str,
+    method: str,
     builder: Callable,
     symmetry: bool,
 ):
     molecule = load(wavefunction_path, backend, symmetry=symmetry)
-    wavefunction = builder(molecule, basis, scheme)
+    if builder == guess:
+        wavefunction = guess(molecule, basis, scheme)
+    else:
+        wavefunction = calculate(molecule, basis, scheme, method=method)
     invocations = 0
 
     @cache()

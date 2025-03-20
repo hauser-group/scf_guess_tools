@@ -271,6 +271,8 @@ class Wavefunction(Base, Object):
             molecule,
             guess,
             basis=basis,
+            method=method,
+            functional=functional,
             origin="calculation",
             time=end - start,
             converged=converged,
@@ -305,17 +307,13 @@ def _scf_calculation(
     Returns:
         A tuple (energy, wavefunction).
     """
-
+    method = method.lower()
     if method not in ("hf", "dft"):
         raise ValueError(f"Unsupported method: {method}")
 
     options = {
         "BASIS": basis,
-        "REFERENCE": "RHF" if molecule.singlet else "UHF",
         "GUESS": guess,
-        # Disable density fitting for highest possible accuracy and
-        # because stability analysis is not available for density fitted
-        # RHF wave functions:
         "SCF_TYPE": "PK",
     }
 
@@ -327,11 +325,13 @@ def _scf_calculation(
             warnings.warn(
                 "DFT functional was not provided. Defaulting to 'B3LYP'.", UserWarning
             )
+        options["REFERENCE"] = "RKS" if molecule.singlet else "UKS"
         #! maybe add later
         # options["DFT_SPHERICAL_POINTS"] = 590
         # options["DFT_RADIAL_POINTS"] = 99
 
     elif method == "hf":
+        options["REFERENCE"] = "RHF" if molecule.singlet else "UHF"
         options["STABILITY_ANALYSIS"] = "CHECK" if molecule.singlet else "FOLLOW"
 
     if second_order:
@@ -340,8 +340,15 @@ def _scf_calculation(
 
     psi4.set_options(options)
 
+    if method == "dft":
+        return psi4.energy(
+            functional,
+            molecule=molecule.native,
+            return_wfn=True,
+        )
+
     return psi4.energy(
-        "hf" if method == "hf" else functional,
+        "hf",
         molecule=molecule.native,
         return_wfn=True,
     )
@@ -352,7 +359,7 @@ def _analyze_output(stdout_file: str, method: str) -> tuple[bool, bool]:
 
     with open(stdout_file, "r") as output:
         output_lines = output.readlines()
-
+        print("".join(output_lines))
         for line in output_lines:
             line = line.lower()
 

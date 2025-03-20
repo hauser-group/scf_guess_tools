@@ -210,6 +210,7 @@ class Wavefunction(Base, Object):
         Returns:
             The computed wavefunction.
         """
+        method = method.lower()
         start = process_time()
 
         molecule.native.basis = basis
@@ -251,6 +252,7 @@ class Wavefunction(Base, Object):
             converged=converged,
             stable=stable,
             second_order=second_order if method == "hf" else None,
+            method=method,
             functional=functional if method == "dft" else None,
         )
 
