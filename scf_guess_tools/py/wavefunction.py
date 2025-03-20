@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-from ..common import timeable, tuplifyable
+from ..common import cache, timeable, tuplifyable
 from ..wavefunction import Wavefunction as Base
 from .core import Object, guessing_schemes
 from .matrix import Matrix
@@ -147,6 +147,8 @@ class Wavefunction(Base, Object):
         self._native = method(self._molecule.native)
 
     @classmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
     def guess(
         cls, molecule: Molecule, basis: str, scheme: str | None = None
     ) -> Wavefunction:
@@ -185,6 +187,8 @@ class Wavefunction(Base, Object):
         )
 
     @classmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
     def calculate(
         cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
     ) -> Wavefunction:

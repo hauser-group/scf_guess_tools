@@ -77,7 +77,6 @@ def equal_wavefunctions(
 
     properties = [
         "basis",
-        "initial",
         "origin",
         "time",
         "converged",
@@ -87,6 +86,10 @@ def equal_wavefunctions(
 
     if not "molecule" in ignore and not equal_molecules(a.molecule, b.molecule):
         print(f"Wavefunction.molecule differs for {a} and {b}")
+        return False
+
+    if not "initial" in ignore and not equal(a.initial, b.initial):
+        print(f"Wavefunction.initial differs for {a} and {b}")
         return False
 
     for property in properties:
@@ -125,7 +128,7 @@ def equal(a, b, **kwargs) -> bool:
     elif isinstance(a, Wavefunction) and isinstance(b, Wavefunction):
         return equal_wavefunctions(a, b, **kwargs)
 
-    assert False, "non-matching types"
+    return a == b
 
 
 def similar_matrices(

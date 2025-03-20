@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from .core import Object
+from ..common import timeable
 from ..molecule import Molecule as Base
+from .core import Object
 from pyscf.gto import M, Mole as Native
 
 import os
@@ -80,6 +81,7 @@ class Molecule(Base, Object):
         self._native = M(atom=atom, charge=q, spin=m - 1, symmetry=symmetry)
 
     @classmethod
+    @timeable
     def load(cls, path: str, symmetry: bool = True) -> Molecule:
         """Load a molecule from an xyz file.
 
