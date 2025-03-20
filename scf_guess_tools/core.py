@@ -105,5 +105,5 @@ def clear_cache():
 
 
 def reset():
-    """Reset the package state and that of all subpackages."""
+    """Reset the root package state."""
     pass

@@ -1,3 +1,4 @@
+from .core import reset
 from contextlib import contextmanager
 
 import psi4
@@ -6,10 +7,11 @@ import psi4
 @contextmanager
 def clean_context():
     """Context manager that provides a clean Psi4 configuration. This ensures that
-    Psi4's options and internal state are reset before executing the enclosed code block.
-    The previous set of options is restored afterwards.
+    Psi4's options, internal state and temporary files are reset before executing the
+    enclosed code block. The previous set of options is restored afterwards.
     """
     exception = None
+    reset()
 
     with psi4.driver.p4util.hold_options_state():
         psi4.core.clean_options()
@@ -19,9 +21,8 @@ def clean_context():
             yield
         except Exception as e:
             exception = e
-        finally:
-            psi4.core.clean_options()
-            psi4.core.clean()
+
+        # leave files for debugging
 
     if exception is not None:
         raise exception
