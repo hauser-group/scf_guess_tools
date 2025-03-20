@@ -35,7 +35,7 @@ def reset():
     global output_directory
     global output_file
 
-    output_directory = f"{cache_directory(throw=True)}/{Backend.PSI.value}"
+    output_directory = f"{cache_directory(throw=True)}.psi"  # don't place within
     os.makedirs(output_directory, exist_ok=True)
 
     output_file = f"{output_directory}/stdout"
