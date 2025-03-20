@@ -22,6 +22,7 @@ caching_path = path_fixture()
 molecule_path = path_fixture()
 matrix_path = path_fixture(max_atoms=7)
 wavefunction_path = path_fixture(max_atoms=7)
+mixed_path = path_fixture(max_atoms=7)
 
 
 def test_basics(context):
@@ -88,7 +89,7 @@ def test_disable(context):
 
 @pytest.mark.parametrize("symmetry", [True, False])
 def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool):
-    molecule = load(molecule_path, backend, symmetry=symmetry)
+    original = load(molecule_path, backend, symmetry=symmetry)
     invocations = 0
 
     @cache()
@@ -98,20 +99,25 @@ def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool)
 
         return m
 
-    assert equal(f(molecule), molecule), "properties of molecule must not change"
+    uncached = f(original)
+
+    assert equal(uncached, original), "properties of molecule must not change"
+    assert hash(uncached) == hash(original), "hash of molecule must not change"
     assert invocations == 1, "function must be invoked for non-cached molecule"
 
-    assert equal(f(molecule), molecule), "properties of molecule must not change"
+    cached = f(original)
+
+    assert equal(cached, original), "properties of molecule must not change"
+    assert hash(cached) == hash(original), "hash of molecule must not change"
     assert invocations == 1, "function must not be invoked for cached molecule"
 
     modified_path = molecule_path[:-4] + "-modified.xyz"
     replace_random_digit(molecule_path, modified_path)
     modified_molecule = load(modified_path, backend)
 
-    assert not equal(
-        f(modified_molecule), molecule
-    ), "properties of molecule must change"
+    modified = f(modified_molecule)
 
+    assert not equal(modified, original), "properties of molecule must change"
     assert invocations == 2, "function must be invoked for non-cached molecule"
 
 
@@ -146,7 +152,7 @@ def test_matrix(
     matrices.extend(wavefunction.density(tuplify=True))
     matrices.extend(wavefunction.fock(tuplify=True))
 
-    for matrix in matrices:
+    for original in matrices:
         clear_cache()
         invocations = 0
 
@@ -157,14 +163,21 @@ def test_matrix(
 
             return m
 
-        assert equal(f(matrix), matrix), "properties of matrix must not change"
+        uncached = f(original)
+
+        assert equal(uncached, original), "properties of matrix must not change"
+        assert hash(uncached) == hash(original), "hash of matrix must not change"
         assert invocations == 1, "function must be invoked for non-cached matrix"
 
-        assert equal(f(matrix), matrix), "properties of matrix must not change"
+        cached = f(original)
+
+        assert equal(cached, original), "properties of matrix must not change"
+        assert hash(cached) == hash(original), "hash of matrix must not change"
         assert invocations == 1, "function must not be invoked for cached matrix"
 
-        new = build(matrix.numpy, backend)
-        assert equal(new, matrix), "properties of matrix must not change"
+        clone = build(original.numpy, backend)
+        assert equal(clone, original), "properties of clone must not change"
+        assert hash(clone) == hash(original), "hash of clone must not change"
 
 
 @pytest.mark.parametrize(
@@ -202,14 +215,83 @@ def test_wavefunction(
 
         return w
 
-    assert equal(
-        f(wavefunction), wavefunction
-    ), "properties of wavefunction must not change"
+    uncached = f(original)
 
+    assert equal(uncached, original), "properties of wavefunction must not change"
+    assert hash(uncached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must be invoked for non-cached wavefunction"
 
-    assert equal(
-        f(wavefunction), wavefunction
-    ), "properties of wavefunction must not change"
+    cached = f(original)
 
+    assert equal(cached, original), "properties of wavefunction must not change"
+    assert hash(cached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must not be invoked for cached wavefunction"
+
+
+@pytest.mark.parametrize(
+    "backend, builder, scheme, symmetry",
+    [
+        (backend, builder, scheme, symmetry)
+        for backend in [Backend.PSI, Backend.PY]
+        for builder in [guess, calculate]
+        for scheme in [None, *guessing_schemes(backend)][::2]
+        for symmetry in [True, False]
+    ],
+)
+def test_mixed(
+    context,
+    backend: Backend,
+    mixed_path: str,
+    scheme: str,
+    builder: Callable,
+    symmetry: bool,
+):
+    basis = "pcseg-0"
+    c_invocations, g_invocations = 0, 0
+
+    @cache()
+    def c(*args, **kwargs):
+        nonlocal c_invocations
+        c_invocations += 1
+        return calculate(*args, **kwargs)
+
+    @cache()
+    def g(*args, **kwargs):
+        nonlocal g_invocations
+        g_invocations += 1
+        return guess(*args, **kwargs)
+
+    molecule1 = load(mixed_path, backend, symmetry=symmetry)
+    molecule2 = load(mixed_path, backend, symmetry=symmetry)
+    assert hash(molecule1) == hash(molecule2), "molecules must be identical"
+
+    initial1 = g(molecule1, basis, scheme)
+    assert g_invocations == 1, "guess must be invoked once"
+    final1 = c(molecule1, basis, initial1)
+    assert c_invocations == 1, "calculate must be invoked once"
+
+    initial2 = g(molecule2, basis, scheme)
+    assert g_invocations == 1, "guess should be cached now"
+    final2 = c(molecule2, basis, initial2)
+    assert c_invocations == 1, "calculate must be invoked once"
+
+    f_invocations = 0
+
+    @cache()
+    def f(w):
+        nonlocal f_invocations
+        f_invocations += 1
+
+        return w
+
+    uncached = f(final1)
+
+    assert equal(uncached, final1), "properties of wavefunction must not change"
+    assert hash(uncached) == hash(final1), "hash of wavefunction must not change"
+    assert f_invocations == 1, "function must be invoked for non-cached wavefunction"
+
+    cached = f(final2)
+
+    assert equal(cached, final1), "properties of wavefunction must not change"
+    assert hash(cached) == hash(final1), "hash of wavefunction must not change"
+    assert f_invocations == 1, "function must not be invoked for cached wavefunction"

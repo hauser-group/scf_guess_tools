@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from molecules.properties import properties
 from pathlib import Path
-from scf_guess_tools import Backend, reset
+from scf_guess_tools import Backend, reset, clear_cache
 from scf_guess_tools.psi import reset as reset_psi
 from scf_guess_tools.py import reset as reset_py
 
@@ -15,29 +15,12 @@ import shutil
 
 @pytest.fixture
 def context():
-    variables = ["PSI_SCRATCH", "PYSCF_TMPDIR", "SGT_CACHE"]
-    directories = [os.environ.get(variable) for variable in variables]
-
-    for directory, variable in zip(directories, variables):
-        if directory is None:
-            pytest.fail(f"{variable} environment variable not set")
-
-        try:
-            shutil.rmtree(directory)
-        except:
-            pass
-        finally:
-            os.makedirs(directory, exist_ok=True)
-
     reset()
     reset_psi()
     reset_py()
+    clear_cache()
 
-    try:
-        yield
-    finally:
-        for directory in directories:
-            shutil.rmtree(directory)
+    yield
 
 
 @pytest.fixture(params=[Backend.PSI, Backend.PY])

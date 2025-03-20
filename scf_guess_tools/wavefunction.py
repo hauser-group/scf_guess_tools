@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from .common import timeable, tuplifyable
+from .common import cache, timeable, tuplifyable
 from .core import Object
 from .matrix import Matrix
 from .molecule import Molecule
+from .proxy import proxy
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any
+
+import joblib
 
 
 class Wavefunction(Object, ABC):
@@ -182,6 +186,31 @@ class Wavefunction(Object, ABC):
         self._functional = functional
         self._method = method
 
+    def __hash__(self) -> int:
+        """Return a deterministic hash.
+
+        Returns:
+            A hash value uniquely identifying the wavefunction.
+        """
+        identity = (
+            self.backend(),
+            self.molecule.__hash__(),
+            self.basis,
+            (
+                self.initial.__hash__()
+                if isinstance(self.initial, Object)
+                else joblib.hash(self.initial)
+            ),
+            self.origin,
+            self.converged,
+            self.stable,
+            self.second_order,
+            self.functional,
+            self.method,
+        )
+
+        return int(joblib.hash(identity), 16)
+
     def __getstate__(self):
         """Return a serialized representation for pickling.
 
@@ -218,3 +247,69 @@ class Wavefunction(Object, ABC):
             self._method,
             self._functional,
         ) = serialized[1:]
+
+    @classmethod
+    @abstractmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
+    def guess(
+        cls, molecule: Molecule, basis: str, scheme: str | None = None, **kwargs
+    ) -> Wavefunction:
+        """Create an initial wavefunction guess. For backend-specific behavior please
+        refer to the docstrings of the actual implemention.
+
+        Args:
+            molecule: The molecule for which the wavefunction is created.
+            basis: The basis set.
+            scheme: The initial guess scheme. If None, the default scheme is used.
+            **kwargs: Additional backend-specific keyword arguments.
+
+        Returns:
+            The guessed wavefunction.
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
+    def calculate(
+        cls,
+        molecule: Molecule,
+        basis: str,
+        guess: str | Wavefunction | None = None,
+        method: str = "hf",
+        functional: str | None = None,
+        **kwargs,
+    ) -> Wavefunction:
+        """Attempt to compute a converged wavefunction. For backend-specific behavior please
+        refer to the docstrings of the actual implemention.
+
+        Args:
+            molecule: The molecule for which the wavefunction is computed.
+            basis: The basis set.
+            guess: The initial guess, either as guessing scheme or another wavefunction.
+            **kwargs: Additional backend-specific keyword arguments.
+
+        Returns:
+            The computed wavefunction.
+        """
+        start = process_time()
+
+
+@wraps(Wavefunction.guess)
+def guess(molecule: Molecule, *args, **kwargs):
+    return proxy(
+        molecule.backend(), lambda p: p.Wavefunction.guess, molecule, *args, **kwargs
+    )
+
+
+@wraps(Wavefunction.calculate)
+def calculate(molecule: Molecule, *args, **kwargs):
+    return proxy(
+        molecule.backend(),
+        lambda p: p.Wavefunction.calculate,
+        molecule,
+        *args,
+        **kwargs,
+    )

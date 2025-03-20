@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..common import timeable, tuplifyable
+from ..common import cache, timeable, tuplifyable
 from ..wavefunction import Wavefunction as Base
 from .auxilary import clean_context
 from .core import Object, output_file
@@ -137,6 +137,8 @@ class Wavefunction(Base, Object):
             self._initial.__setstate__(serialized[3])
 
     @classmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
     def guess(
         cls, molecule: Molecule, basis: str, scheme: str | None = None
     ) -> Wavefunction:
@@ -186,12 +188,14 @@ class Wavefunction(Base, Object):
             )
 
     @classmethod
+    @timeable
+    @cache(enable=False, ignore=["cls"])
     def calculate(
         cls,
         molecule: Molecule,
         basis: str,
-        method: str = "hf",
         guess: str | Wavefunction | None = None,
+        method: str = "hf",
         functional: str | None = None,
     ) -> Wavefunction:
         """Attempt to compute a converged wavefunction. Detect instabilities and
@@ -210,19 +214,21 @@ class Wavefunction(Base, Object):
             The computed wavefunction.
         """
         start = process_time()
-
         guess = "AUTO" if guess is None else guess
-        guess_str = guess
-
-        if not isinstance(guess, str):
-            # https://forum.psicode.org/t/custom-guess-for-hartree-fock/2026/6
-            scratch_dir = psi4.core.IOManager.shared_object().get_default_path()
-            guess_file = f"{scratch_dir}/stdout.{molecule.name}.{os.getpid()}.180.npy"
-            guess.native.to_file(filename=guess_file)
-            guess_str = "READ"
 
         def calculate(second_order: bool, so_max_iterations: int | None = None):
             with clean_context():
+                guess_str = guess
+
+                if not isinstance(guess, str):
+                    # https://forum.psicode.org/t/custom-guess-for-hartree-fock/2026/6
+                    scratch = psi4.core.IOManager.shared_object().get_default_path()
+                    guess_file = (
+                        f"{scratch}/stdout.{molecule.name}.{os.getpid()}.180.npy"
+                    )
+                    guess.native.to_file(filename=guess_file)
+                    guess_str = "READ"
+
                 _, wfn = _scf_calculation(
                     molecule,
                     guess_str,
@@ -359,7 +365,7 @@ def _analyze_output(stdout_file: str, method: str) -> tuple[bool, bool]:
 
     with open(stdout_file, "r") as output:
         output_lines = output.readlines()
-        print("".join(output_lines))
+
         for line in output_lines:
             line = line.lower()
 
