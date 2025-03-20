@@ -98,6 +98,11 @@ def clear_cache():
     except:
         pass
 
+    try:
+        os.makedirs(cache_directory(), exist_ok=True)
+    except:
+        pass
+
 
 def reset():
     """Reset the package state and that of all subpackages."""

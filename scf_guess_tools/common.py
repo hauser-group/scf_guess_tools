@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .core import cache_directory
+from .core import Object, cache_directory
 from functools import wraps
 from pathlib import Path
 from time import process_time
@@ -99,6 +99,7 @@ def cache(
         The wrapped function with caching functionality.
     """
     ignore = ignore or []
+    logger = logging.getLogger("CACHE")
 
     def decorator(function):
         @wraps(function)
@@ -109,29 +110,32 @@ def cache(
                 cache = directory
 
             cache = cache or cache_directory(throw=True)
-            base = Path(cache) / f"{function.__module__}.{function.__qualname__}"
+            name = f"{function.__module__}.{function.__qualname__}"
+            base = Path(cache) / name
 
             signature = inspect.signature(function)
             arguments = signature.bind(*args, **kwargs)
             arguments.apply_defaults()
 
-            parameters = {}
+            def canonicalize(object):
+                if isinstance(object, (list, tuple)):
+                    return tuple(canonicalize(e) for e in object)
+                elif isinstance(object, dict):
+                    return {k: canonicalize(object[k]) for k in sorted(object.keys())}
+                elif isinstance(object, Object):
+                    return object.__hash__()
+                elif hasattr(object, "__dict__"):
+                    return canonicalize(vars(object))
+                elif isinstance(object, (str, int, float, complex, bool, type(None))):
+                    return object
+                else:
+                    raise TypeError(f"Unable to canonicalize {object}")
 
-            for key, value in arguments.arguments.items():
-                if key in ignore:
-                    continue
-
-                try:
-                    parameters[key] = hash(value)
-                except Exception as e:
-                    logging.warning(
-                        (
-                            f"Unable to hash cached function parameter {key}, "
-                            f"falling back to joblib.hash: {e}"
-                        )
-                    )
-
-                    parameters[key] = joblib.hash(value)
+            parameters = {
+                k: canonicalize(v)
+                for k, v in arguments.arguments.items()
+                if k not in ignore
+            }
 
             key = joblib.hash(parameters)
             result_available, result = None, None
@@ -156,18 +160,10 @@ def cache(
                 bucket += 1
 
             if result_available:
-                logging.info(
-                    f"Returning cached result of function {function.__qualname__}"
-                    f"({arguments.arguments})"
-                )
-
+                logger.info(f"Returning cached result of {name}({arguments.arguments})")
                 return result
 
-            logging.info(
-                f"Invoking cached function {function.__qualname__}"
-                f"({arguments.arguments})"
-            )
-
+            logger.info(f"Invoking {name}({arguments.arguments})")
             base.mkdir(parents=True, exist_ok=True)
 
             result = function(*args, **kwargs)
@@ -191,7 +187,7 @@ def cache(
 
                 assert loaded_parameters != parameters
 
-                logging.info(f"Hash collision detected for bucket {bucket}")
+                logger.info(f"Hash collision detected for bucket {bucket}")
                 bucket += 1
 
             return result
