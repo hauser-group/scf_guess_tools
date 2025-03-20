@@ -203,9 +203,9 @@ def test_wavefunction(
 ):
     molecule = load(wavefunction_path, backend, symmetry=symmetry)
     if builder == guess:
-        wavefunction = guess(molecule, basis, scheme)
+        original = guess(molecule, basis, scheme)
     else:
-        wavefunction = calculate(molecule, basis, scheme, method=method)
+        original = calculate(molecule, basis, scheme, method=method)
     invocations = 0
 
     @cache()
@@ -217,13 +217,21 @@ def test_wavefunction(
 
     uncached = f(original)
 
-    assert equal(uncached, original), "properties of wavefunction must not change"
+    test_ignore = []
+    if method == "dft":  # dft doesn't give fock matrix!
+        test_ignore = ["fock", "electronic_energy"]
+
+    assert equal(
+        uncached, original, ignore=test_ignore
+    ), "properties of wavefunction must not change"
     assert hash(uncached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must be invoked for non-cached wavefunction"
 
     cached = f(original)
 
-    assert equal(cached, original), "properties of wavefunction must not change"
+    assert equal(
+        cached, original, ignore=test_ignore
+    ), "properties of wavefunction must not change"
     assert hash(cached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must not be invoked for cached wavefunction"
 

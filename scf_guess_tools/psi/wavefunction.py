@@ -140,7 +140,11 @@ class Wavefunction(Base, Object):
     @timeable
     @cache(enable=False, ignore=["cls"])
     def guess(
-        cls, molecule: Molecule, basis: str, scheme: str | None = None
+        cls,
+        molecule: Molecule,
+        basis: str,
+        scheme: str | None = None,
+        method: str = "hf",
     ) -> Wavefunction:
         """Create an initial wavefunction guess.
 
@@ -185,6 +189,7 @@ class Wavefunction(Base, Object):
                 basis=basis,
                 origin="guess",
                 time=end - start,
+                method=method,
             )
 
     @classmethod

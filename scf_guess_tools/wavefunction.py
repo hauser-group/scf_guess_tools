@@ -253,7 +253,12 @@ class Wavefunction(Object, ABC):
     @timeable
     @cache(enable=False, ignore=["cls"])
     def guess(
-        cls, molecule: Molecule, basis: str, scheme: str | None = None, **kwargs
+        cls,
+        molecule: Molecule,
+        basis: str,
+        scheme: str | None = None,
+        method: str = "hf",
+        **kwargs,
     ) -> Wavefunction:
         """Create an initial wavefunction guess. For backend-specific behavior please
         refer to the docstrings of the actual implemention.
@@ -262,6 +267,7 @@ class Wavefunction(Object, ABC):
             molecule: The molecule for which the wavefunction is created.
             basis: The basis set.
             scheme: The initial guess scheme. If None, the default scheme is used.
+            method: The calculation method to use (hf, dft)
             **kwargs: Additional backend-specific keyword arguments.
 
         Returns:
@@ -289,6 +295,8 @@ class Wavefunction(Object, ABC):
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
             guess: The initial guess, either as guessing scheme or another wavefunction.
+            method: The calculation method to use (hf, dft)
+            functional: The functional to use for dft calculations
             **kwargs: Additional backend-specific keyword arguments.
 
         Returns:

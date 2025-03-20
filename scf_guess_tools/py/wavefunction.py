@@ -69,11 +69,22 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
-        """Compute the Fock matrix.
+        """Compute the Fock matrix or effective KS matrix for method = 'dft'.
 
         Returns:
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+            A tuple of alpha and beta matrices for DFT.
         """
+        if self.method == "dft":
+            return None
+            #! use effective KS matrix for DFT
+            # veff = self._native.get_veff(dm=self._D)
+            # hcore = self._native.get_hcore()
+            # if self.molecule.singlet:
+            #     eff_ks_mat = hcore + veff
+            #     return Matrix(eff_ks_mat)
+            # eff_ks_mat = [hcore + veff[0], hcore + veff[1]]
+            # return Matrix(eff_ks_mat[0]), Matrix(eff_ks_mat[1])
 
         F = self._native.get_fock(dm=self._D)
 
@@ -146,13 +157,21 @@ class Wavefunction(Base, Object):
         self._molecule.native.build()
 
         method = RHF if self._molecule.singlet else UHF
+
+        if hasattr(self, "_method") and self._method == "dft":
+            method = RKS if self._molecule.singlet else UKS
+
         self._native = method(self._molecule.native)
 
     @classmethod
     @timeable
     @cache(enable=False, ignore=["cls"])
     def guess(
-        cls, molecule: Molecule, basis: str, scheme: str | None = None
+        cls,
+        molecule: Molecule,
+        basis: str,
+        scheme: str | None = None,
+        method: str = "hf",
     ) -> Wavefunction:
         """Create an initial wavefunction guess.
 
@@ -186,6 +205,7 @@ class Wavefunction(Base, Object):
             basis=basis,
             origin="guess",
             time=end - start,
+            method=method,
         )
 
     @classmethod
@@ -207,8 +227,8 @@ class Wavefunction(Base, Object):
         Args:
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
-            method (optional): The calculation method to use (hf, dft)
             guess (optional): The initial guess, either as guessing scheme or another wavefunction.
+            method (optional): The calculation method to use (hf, dft)
             functional (optional): The functional to use for dft calculations
 
         Returns:

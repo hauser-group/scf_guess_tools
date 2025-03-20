@@ -114,7 +114,9 @@ def equal_wavefunctions(
     if not "electronic_energy" in ignore and not np.isclose(
         a.electronic_energy(), b.electronic_energy(), rtol=1e-5, atol=1e-10
     ):
-        print(f"Wavefunction.electronic_energy differs for {a} and {b}")
+        print(
+            f"Wavefunction.electronic_energy differs for {a} and {b} by {a.electronic_energy() - b.electronic_energy()}"
+        )
         return False
 
     return True
