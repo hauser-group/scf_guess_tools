@@ -238,12 +238,13 @@ def test_wavefunction(
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, symmetry",
+    "backend, builder, scheme, method, symmetry",
     [
-        (backend, builder, scheme, symmetry)
+        (backend, builder, scheme, method, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
         for scheme in [None, *guessing_schemes(backend)][::2]
+        for method in ["hf", "dft"]
         for symmetry in [True, False]
     ],
 )
@@ -300,7 +301,7 @@ def test_mixed(
     uncached = f(final1)
 
     assert equal(
-        uncached, final1, to_ignore
+        uncached, final1, ignore=to_ignore
     ), "properties of wavefunction must not change"
     assert hash(uncached) == hash(final1), "hash of wavefunction must not change"
     assert f_invocations == 1, "function must be invoked for non-cached wavefunction"
@@ -308,7 +309,7 @@ def test_mixed(
     cached = f(final2)
 
     assert equal(
-        cached, final1, to_ignore
+        cached, final1, ignore=to_ignore
     ), "properties of wavefunction must not change"
     assert hash(cached) == hash(final1), "hash of wavefunction must not change"
     assert f_invocations == 1, "function must not be invoked for cached wavefunction"
