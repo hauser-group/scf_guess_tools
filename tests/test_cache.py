@@ -144,13 +144,14 @@ def test_matrix(
 ):
     molecule = load(matrix_path, backend, symmetry=symmetry)
     if builder == guess:
-        wavefunction = guess(molecule, basis, scheme)
+        wavefunction = guess(molecule, basis, scheme, method=method)
     else:
         wavefunction = calculate(molecule, basis, scheme, method=method)
 
     matrices = [wavefunction.overlap(), wavefunction.core_hamiltonian()]
     matrices.extend(wavefunction.density(tuplify=True))
-    matrices.extend(wavefunction.fock(tuplify=True))
+    if method == "hf":
+        matrices.extend(wavefunction.fock(tuplify=True))
 
     for original in matrices:
         clear_cache()
@@ -203,7 +204,7 @@ def test_wavefunction(
 ):
     molecule = load(wavefunction_path, backend, symmetry=symmetry)
     if builder == guess:
-        original = guess(molecule, basis, scheme)
+        original = guess(molecule, basis, scheme, method=method)
     else:
         original = calculate(molecule, basis, scheme, method=method)
     invocations = 0
@@ -217,12 +218,12 @@ def test_wavefunction(
 
     uncached = f(original)
 
-    test_ignore = []
+    to_ignore = []
     if method == "dft":  # dft doesn't give fock matrix!
-        test_ignore = ["fock", "electronic_energy"]
+        to_ignore = ["fock", "electronic_energy"]
 
     assert equal(
-        uncached, original, ignore=test_ignore
+        uncached, original, ignore=to_ignore
     ), "properties of wavefunction must not change"
     assert hash(uncached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must be invoked for non-cached wavefunction"
@@ -230,7 +231,7 @@ def test_wavefunction(
     cached = f(original)
 
     assert equal(
-        cached, original, ignore=test_ignore
+        cached, original, ignore=to_ignore
     ), "properties of wavefunction must not change"
     assert hash(cached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must not be invoked for cached wavefunction"
@@ -252,10 +253,14 @@ def test_mixed(
     mixed_path: str,
     scheme: str,
     builder: Callable,
+    method: str,
     symmetry: bool,
 ):
     basis = "pcseg-0"
     c_invocations, g_invocations = 0, 0
+    to_ignore = []
+    if method == "dft":  # dft doesn't give fock matrix!
+        to_ignore = ["fock", "electronic_energy"]
 
     @cache()
     def c(*args, **kwargs):
@@ -294,12 +299,16 @@ def test_mixed(
 
     uncached = f(final1)
 
-    assert equal(uncached, final1), "properties of wavefunction must not change"
+    assert equal(
+        uncached, final1, to_ignore
+    ), "properties of wavefunction must not change"
     assert hash(uncached) == hash(final1), "hash of wavefunction must not change"
     assert f_invocations == 1, "function must be invoked for non-cached wavefunction"
 
     cached = f(final2)
 
-    assert equal(cached, final1), "properties of wavefunction must not change"
+    assert equal(
+        cached, final1, to_ignore
+    ), "properties of wavefunction must not change"
     assert hash(cached) == hash(final1), "hash of wavefunction must not change"
     assert f_invocations == 1, "function must not be invoked for cached wavefunction"
