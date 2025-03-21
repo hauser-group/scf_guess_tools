@@ -93,6 +93,10 @@ class Wavefunction(Base, Object):
 
         return Matrix(F[0]), Matrix(F[1])
 
+    def _dft_electronic_energy(self) -> float:
+        total, _ = self.native.energy_elec()
+        return total
+
     def __init__(
         self,
         native: Native,
@@ -278,6 +282,7 @@ class Wavefunction(Base, Object):
             second_order=second_order if method == "hf" else None,
             method=method,
             functional=functional if method == "dft" else None,
+            e_total=solver.e_tot,
         )
 
 

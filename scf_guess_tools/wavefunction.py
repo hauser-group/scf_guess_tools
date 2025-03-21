@@ -75,6 +75,11 @@ class Wavefunction(Object, ABC):
         """The method used to calculate the wavefunction ('hf' or 'dft')"""
         return self._method
 
+    @property
+    def e_total(self) -> float:
+        """The total energy of the wavefunction."""
+        return self._e_total
+
     @abstractmethod
     @timeable
     def overlap(self) -> Matrix:
@@ -141,6 +146,9 @@ class Wavefunction(Object, ABC):
         D = self.density() if density is None else density
         F = self.fock() if fock is None else fock
 
+        if self.method == "dft":
+            return self._dft_electronic_energy()
+
         if self.molecule.singlet:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
 
@@ -165,6 +173,7 @@ class Wavefunction(Object, ABC):
         second_order: bool | None = None,
         functional: str | None = None,
         method: str | None = None,
+        e_total: float | None = None,
     ):
         """Initialize the wavefunction. Should not be used directly.
 
@@ -176,6 +185,9 @@ class Wavefunction(Object, ABC):
             stable: Whether the wavefunction is stable (if applicable).
             second_order: Whether second-order SCF was needed due to convergence
                 issues or instabilities.
+            functional: The functional used for DFT calculations.
+            method: The calculation method used (hf, dft).
+            e_total: The total energy of the wavefunction
         """
         self._basis = basis
         self._origin = origin
@@ -185,6 +197,7 @@ class Wavefunction(Object, ABC):
         self._second_order = second_order
         self._functional = functional
         self._method = method
+        self._e_total = e_total
 
     def __hash__(self) -> int:
         """Return a deterministic hash.
@@ -207,6 +220,7 @@ class Wavefunction(Object, ABC):
             self.second_order,
             self.functional,
             self.method,
+            self.e_total,
         )
 
         return int(joblib.hash(identity), 16)
@@ -227,6 +241,7 @@ class Wavefunction(Object, ABC):
             self.second_order,
             self.method,
             self.functional,
+            self.e_total,
         )
 
     def __setstate__(self, serialized):
@@ -246,6 +261,7 @@ class Wavefunction(Object, ABC):
             self._second_order,
             self._method,
             self._functional,
+            self._e_total,
         ) = serialized[1:]
 
     @classmethod
