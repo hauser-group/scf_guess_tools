@@ -122,6 +122,14 @@ class Wavefunction(Object, ABC):
         """
         pass
 
+    def nuclear_repulsion_energy(self) -> float:
+        """Compute the nuclear repulsion energy.
+
+        Returns:
+            The computed nuclear repulsion energy.
+        """
+        pass
+
     @tuplifyable
     def electronic_energy(
         self,

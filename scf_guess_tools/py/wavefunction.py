@@ -98,6 +98,9 @@ class Wavefunction(Base, Object):
         e_total = self._native.e_tot - self.native.mol.energy_nuc()
         return e_total
 
+    def nuclear_repulsion_energy(self):
+        return self._molecule.native.energy_nuc()
+
     def __init__(
         self,
         native: Native,

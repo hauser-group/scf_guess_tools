@@ -87,6 +87,9 @@ class Wavefunction(Base, Object):
         )  #! TODO: This performs a new calculation!
         return e_total - e_nuc
 
+    def nuclear_repulsion_energy(self):
+        return self.molecule.native.nuclear_repulsion_energy()
+
     def __init__(
         self,
         native: Native,
