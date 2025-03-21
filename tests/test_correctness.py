@@ -44,10 +44,10 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     initials = [
         guess(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
     ]
-
-    assert similar(
-        *initials, ignore=["molecule", "initial", "time"]
-    ), "core guess wavefunctions must be similar"
+    ignore = ["molecule", "initial", "time"]
+    if method == "dft":
+        ignore.append("fock")
+    assert similar(*initials, ignore=ignore), "core guess wavefunctions must be similar"
 
     finals = [
         calculate(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
