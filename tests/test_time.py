@@ -15,6 +15,7 @@ from scf_guess_tools import (
 from scf_guess_tools.common import tuplify
 from types import ModuleType
 from typing import Callable
+import warnings
 
 import pytest
 
@@ -38,8 +39,13 @@ def test_load(context, backend: Backend, basics_path: str, time: bool | None):
 
 
 @pytest.mark.parametrize(
-    "time, build",
-    [(time, build) for time in [None, True, False] for build in [guess, calculate]],
+    "time, build, method",
+    [
+        (time, build, method)
+        for time in [None, True, False]
+        for build in [guess, calculate]
+        for method in ["hf", "dft"]
+    ],
 )
 def test_build(
     context,
@@ -47,10 +53,11 @@ def test_build(
     basics_path: str,
     time: bool | None,
     basis: str,
+    method: str,
     build: Callable,
 ):
     molecule = load(basics_path, backend)
-    result = build(molecule, basis, time=time)
+    result = build(molecule, basis, time=time, method=method)
 
     if time is None or time == False:
         assert isinstance(
@@ -67,12 +74,13 @@ def test_build(
 
 
 @pytest.mark.parametrize(
-    "time, attribute, build",
+    "time, attribute, build, method",
     [
-        (time, attribute, build)
+        (time, attribute, build, method)
         for time in [None, True, False]
         for attribute in ["overlap", "core_hamiltonian", "density", "fock"]
         for build in [guess, calculate]
+        for method in ["hf", "dft"]
     ],
 )
 def test_wavefunction(
@@ -82,10 +90,15 @@ def test_wavefunction(
     time: bool | None,
     basis: str,
     attribute: str,
+    method: str,
     build: Callable,
 ):
     molecule = load(wavefunction_path, backend)
-    wavefunction = build(molecule, basis)
+    wavefunction = build(molecule, basis, method=method)
+
+    if attribute == "fock" and method == "dft":
+        warnings.warn("Skipping fock matrix for dft")
+        return
 
     method = getattr(wavefunction, attribute)
     result = method(time=time)
@@ -104,10 +117,15 @@ def test_wavefunction(
         assert time > 0.0, "timed attribute must return positive time"
 
 
-def test_times(context, backend: Backend, times_path: str, basis: str):
+@pytest.mark.parametrize("method", ["hf", "dft"])
+def test_times(context, backend: Backend, times_path: str, basis: str, method: str):
     molecule = load(times_path, backend)
-    initial_1, initial_time_1 = guess(molecule, basis, cache=True, time=True)
-    final_1, final_time_1 = calculate(molecule, basis, cache=True, time=True)
+    initial_1, initial_time_1 = guess(
+        molecule, basis, cache=True, time=True, method=method
+    )
+    final_1, final_time_1 = calculate(
+        molecule, basis, cache=True, time=True, method=method
+    )
 
     assert (
         initial_time_1 >= initial_1.time
@@ -120,8 +138,12 @@ def test_times(context, backend: Backend, times_path: str, basis: str):
     assert final_time_1 >= initial_time_1, "calculation must take longer than guessing"
     assert final_1.time >= initial_1.time, "calculation must take longer than guessing"
 
-    initial_2, initial_time_2 = guess(molecule, basis, cache=True, time=True)
-    final_2, final_time_2 = calculate(molecule, basis, cache=True, time=True)
+    initial_2, initial_time_2 = guess(
+        molecule, basis, cache=True, time=True, method=method
+    )
+    final_2, final_time_2 = calculate(
+        molecule, basis, cache=True, time=True, method=method
+    )
 
     assert initial_2.time == initial_1.time, "cached time must remain unchanged"
     assert final_2.time == final_1.time, "cached time must remain unchanged"

@@ -1,5 +1,7 @@
 from .core import reset
 from contextlib import contextmanager
+from .core import output_directory, output_file
+import os
 
 import psi4
 

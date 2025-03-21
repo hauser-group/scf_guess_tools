@@ -65,6 +65,16 @@ class Wavefunction(Object, ABC):
         instabilities."""
         return self._second_order
 
+    @property
+    def functional(self) -> str | None:
+        """The functional used if the calculation was started with method=dft (e.g., 'PBE', 'B3LYP')"""
+        return self._functional
+
+    @property
+    def method(self) -> str | None:
+        """The method used to calculate the wavefunction ('hf' or 'dft')"""
+        return self._method
+
     @abstractmethod
     @timeable
     def overlap(self) -> Matrix:
@@ -153,6 +163,8 @@ class Wavefunction(Object, ABC):
         converged: bool | None = None,
         stable: bool | None = None,
         second_order: bool | None = None,
+        functional: str | None = None,
+        method: str | None = None,
     ):
         """Initialize the wavefunction. Should not be used directly.
 
@@ -171,6 +183,8 @@ class Wavefunction(Object, ABC):
         self._converged = converged
         self._stable = stable
         self._second_order = second_order
+        self._functional = functional
+        self._method = method
 
     def __hash__(self) -> int:
         """Return a deterministic hash.
@@ -191,6 +205,8 @@ class Wavefunction(Object, ABC):
             self.converged,
             self.stable,
             self.second_order,
+            self.functional,
+            self.method,
         )
 
         return int(joblib.hash(identity), 16)
@@ -209,6 +225,8 @@ class Wavefunction(Object, ABC):
             self.converged,
             self.stable,
             self.second_order,
+            self.method,
+            self.functional,
         )
 
     def __setstate__(self, serialized):
@@ -226,6 +244,8 @@ class Wavefunction(Object, ABC):
             self._converged,
             self._stable,
             self._second_order,
+            self._method,
+            self._functional,
         ) = serialized[1:]
 
     @classmethod
@@ -233,7 +253,12 @@ class Wavefunction(Object, ABC):
     @timeable
     @cache(enable=False, ignore=["cls"])
     def guess(
-        cls, molecule: Molecule, basis: str, scheme: str | None = None, **kwargs
+        cls,
+        molecule: Molecule,
+        basis: str,
+        scheme: str | None = None,
+        method: str = "hf",
+        **kwargs,
     ) -> Wavefunction:
         """Create an initial wavefunction guess. For backend-specific behavior please
         refer to the docstrings of the actual implemention.
@@ -242,6 +267,7 @@ class Wavefunction(Object, ABC):
             molecule: The molecule for which the wavefunction is created.
             basis: The basis set.
             scheme: The initial guess scheme. If None, the default scheme is used.
+            method: The calculation method to use (hf, dft)
             **kwargs: Additional backend-specific keyword arguments.
 
         Returns:
@@ -258,6 +284,8 @@ class Wavefunction(Object, ABC):
         molecule: Molecule,
         basis: str,
         guess: str | Wavefunction | None = None,
+        method: str = "hf",
+        functional: str | None = None,
         **kwargs,
     ) -> Wavefunction:
         """Attempt to compute a converged wavefunction. For backend-specific behavior please
@@ -267,6 +295,8 @@ class Wavefunction(Object, ABC):
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
             guess: The initial guess, either as guessing scheme or another wavefunction.
+            method: The calculation method to use (hf, dft)
+            functional: The functional to use for dft calculations
             **kwargs: Additional backend-specific keyword arguments.
 
         Returns:

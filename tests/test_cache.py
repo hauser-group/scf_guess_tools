@@ -122,11 +122,12 @@ def test_molecule(context, backend: Backend, molecule_path: str, symmetry: bool)
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, symmetry",
+    "backend, builder, method, scheme, symmetry",
     [
-        (backend, builder, scheme, symmetry)
+        (backend, builder, method, scheme, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
+        for method in ["hf", "dft"]
         for scheme in [None, *guessing_schemes(backend)][::2]
         for symmetry in [True, False]
     ],
@@ -136,16 +137,21 @@ def test_matrix(
     backend: Backend,
     matrix_path: str,
     basis: str,
-    scheme: str,
     builder: Callable,
+    method: str,
+    scheme: str,
     symmetry: bool,
 ):
     molecule = load(matrix_path, backend, symmetry=symmetry)
-    wavefunction = builder(molecule, basis, scheme)
+    if builder == guess:
+        wavefunction = guess(molecule, basis, scheme, method=method)
+    else:
+        wavefunction = calculate(molecule, basis, scheme, method=method)
 
     matrices = [wavefunction.overlap(), wavefunction.core_hamiltonian()]
     matrices.extend(wavefunction.density(tuplify=True))
-    matrices.extend(wavefunction.fock(tuplify=True))
+    if method == "hf":
+        matrices.extend(wavefunction.fock(tuplify=True))
 
     for original in matrices:
         clear_cache()
@@ -176,11 +182,12 @@ def test_matrix(
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, symmetry",
+    "backend, builder, method, scheme, symmetry",
     [
-        (backend, builder, scheme, symmetry)
+        (backend, builder, method, scheme, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
+        for method in ["hf", "dft"]
         for scheme in [None, *guessing_schemes(backend)][::2]
         for symmetry in [True, False]
     ],
@@ -191,11 +198,15 @@ def test_wavefunction(
     wavefunction_path: str,
     basis: str,
     scheme: str,
+    method: str,
     builder: Callable,
     symmetry: bool,
 ):
     molecule = load(wavefunction_path, backend, symmetry=symmetry)
-    original = builder(molecule, basis, scheme)
+    if builder == guess:
+        original = guess(molecule, basis, scheme, method=method)
+    else:
+        original = calculate(molecule, basis, scheme, method=method)
     invocations = 0
 
     @cache()
@@ -207,24 +218,33 @@ def test_wavefunction(
 
     uncached = f(original)
 
-    assert equal(uncached, original), "properties of wavefunction must not change"
+    to_ignore = []
+    if method == "dft":  # dft doesn't give fock matrix!
+        to_ignore = ["fock", "electronic_energy"]
+
+    assert equal(
+        uncached, original, ignore=to_ignore
+    ), "properties of wavefunction must not change"
     assert hash(uncached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must be invoked for non-cached wavefunction"
 
     cached = f(original)
 
-    assert equal(cached, original), "properties of wavefunction must not change"
+    assert equal(
+        cached, original, ignore=to_ignore
+    ), "properties of wavefunction must not change"
     assert hash(cached) == hash(original), "hash of wavefunction must not change"
     assert invocations == 1, "function must not be invoked for cached wavefunction"
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, symmetry",
+    "backend, builder, scheme, method, symmetry",
     [
-        (backend, builder, scheme, symmetry)
+        (backend, builder, scheme, method, symmetry)
         for backend in [Backend.PSI, Backend.PY]
         for builder in [guess, calculate]
         for scheme in [None, *guessing_schemes(backend)][::2]
+        for method in ["hf", "dft"]
         for symmetry in [True, False]
     ],
 )
@@ -234,10 +254,14 @@ def test_mixed(
     mixed_path: str,
     scheme: str,
     builder: Callable,
+    method: str,
     symmetry: bool,
 ):
     basis = "pcseg-0"
     c_invocations, g_invocations = 0, 0
+    to_ignore = []
+    if method == "dft":  # dft doesn't give fock matrix!
+        to_ignore = ["fock", "electronic_energy"]
 
     @cache()
     def c(*args, **kwargs):
@@ -276,12 +300,16 @@ def test_mixed(
 
     uncached = f(final1)
 
-    assert equal(uncached, final1), "properties of wavefunction must not change"
+    assert equal(
+        uncached, final1, ignore=to_ignore
+    ), "properties of wavefunction must not change"
     assert hash(uncached) == hash(final1), "hash of wavefunction must not change"
     assert f_invocations == 1, "function must be invoked for non-cached wavefunction"
 
     cached = f(final2)
 
-    assert equal(cached, final1), "properties of wavefunction must not change"
+    assert equal(
+        cached, final1, ignore=to_ignore
+    ), "properties of wavefunction must not change"
     assert hash(cached) == hash(final1), "hash of wavefunction must not change"
     assert f_invocations == 1, "function must not be invoked for cached wavefunction"

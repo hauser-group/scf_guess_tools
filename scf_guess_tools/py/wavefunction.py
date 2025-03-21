@@ -8,8 +8,10 @@ from .matrix import Matrix
 from .molecule import Molecule
 from numpy.typing import NDArray
 from pyscf.scf import RHF, UHF
+from pyscf.dft import RKS, UKS
 from pyscf.scf.hf import SCF as Native
 from time import process_time
+import warnings
 
 
 class Wavefunction(Base, Object):
@@ -19,7 +21,7 @@ class Wavefunction(Base, Object):
 
     @property
     def native(self) -> Native:
-        """The underlying Psi4 wavefunction object."""
+        """The underlying PySCF wavefunction object."""
         return self._native
 
     @property
@@ -67,11 +69,22 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
-        """Compute the Fock matrix.
+        """Compute the Fock matrix or effective KS matrix for method = 'dft'.
 
         Returns:
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+            A tuple of alpha and beta matrices for DFT.
         """
+        if self.method == "dft":
+            return None
+            #! use effective KS matrix for DFT
+            # veff = self._native.get_veff(dm=self._D)
+            # hcore = self._native.get_hcore()
+            # if self.molecule.singlet:
+            #     eff_ks_mat = hcore + veff
+            #     return Matrix(eff_ks_mat)
+            # eff_ks_mat = [hcore + veff[0], hcore + veff[1]]
+            # return Matrix(eff_ks_mat[0]), Matrix(eff_ks_mat[1])
 
         F = self._native.get_fock(dm=self._D)
 
@@ -144,13 +157,21 @@ class Wavefunction(Base, Object):
         self._molecule.native.build()
 
         method = RHF if self._molecule.singlet else UHF
+
+        if hasattr(self, "_method") and self._method == "dft":
+            method = RKS if self._molecule.singlet else UKS
+
         self._native = method(self._molecule.native)
 
     @classmethod
     @timeable
     @cache(enable=False, ignore=["cls"])
     def guess(
-        cls, molecule: Molecule, basis: str, scheme: str | None = None
+        cls,
+        molecule: Molecule,
+        basis: str,
+        scheme: str | None = None,
+        method: str = "hf",
     ) -> Wavefunction:
         """Create an initial wavefunction guess.
 
@@ -184,13 +205,19 @@ class Wavefunction(Base, Object):
             basis=basis,
             origin="guess",
             time=end - start,
+            method=method,
         )
 
     @classmethod
     @timeable
     @cache(enable=False, ignore=["cls"])
     def calculate(
-        cls, molecule: Molecule, basis: str, guess: str | Wavefunction | None = None
+        cls,
+        molecule: Molecule,
+        basis: str,
+        guess: str | Wavefunction | None = None,
+        method: str = "hf",
+        functional: str | None = None,
     ) -> Wavefunction:
         """Attempt to compute a converged wavefunction. Detect instabilities and
         attempt to resolve them for both RHF and UHF. Initially try first order HF, then
@@ -200,26 +227,35 @@ class Wavefunction(Base, Object):
         Args:
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
-            guess: The initial guess, either as guessing scheme or another wavefunction.
+            guess (optional): The initial guess, either as guessing scheme or another wavefunction.
+            method (optional): The calculation method to use (hf, dft)
+            functional (optional): The functional to use for dft calculations
 
         Returns:
             The computed wavefunction.
         """
+        method = method.lower()
         start = process_time()
 
         molecule.native.basis = basis
         molecule.native.build()
 
         def calculate(second_order: bool, so_max_iterations: int | None = None):
-            return _hartree_fock(
-                molecule, guess, basis, second_order, so_max_iterations
+            return _scf_calculation(
+                molecule,
+                guess,
+                basis,
+                method,
+                functional,
+                second_order,
+                so_max_iterations,
             )
 
         second_order = False
         solver, converged, stable = calculate(second_order)
         satisfied = lambda: converged and (molecule.singlet or stable)
 
-        if not satisfied():
+        if method == "hf" and not satisfied():
             second_order = True
             so_max_iterations = 5
 
@@ -239,19 +275,55 @@ class Wavefunction(Base, Object):
             time=end - start,
             converged=converged,
             stable=stable,
-            second_order=second_order,
+            second_order=second_order if method == "hf" else None,
+            method=method,
+            functional=functional if method == "dft" else None,
         )
 
 
-def _hartree_fock(
+def _scf_calculation(
     molecule: Molecule,
-    guess: str,
+    guess: str | Wavefunction | None,
     basis: str,
-    second_order: bool,
-    so_max_iterations: int | None,
+    method: str = "hf",
+    functional: str | None = None,
+    second_order: bool = False,
+    so_max_iterations: int | None = None,
 ) -> tuple[Native, bool, bool]:
-    method = RHF if molecule.singlet else UHF
-    solver = method(molecule.native)
+    """
+    Run an SCF calculation (either HF or DFT).
+
+    Args:
+        molecule: Molecule object.
+        guess: Initial guess.
+        basis: Basis set.
+        method: Calculation method ('hf' or 'dft').
+        functional: Exchange-correlation functional (for DFT).
+        second_order: Whether to use second-order HF.
+        so_max_iterations: Max iterations for second-order HF.
+
+    Returns:
+        solver: PySCF SCF/DFT solver instance.
+        converged: Whether the SCF calculation converged.
+        stable: Whether the solution is stable.
+    """
+    if method == "hf":
+        solver_class = RHF if molecule.singlet else UHF
+    elif method == "dft":
+        solver_class = RKS if molecule.singlet else UKS
+    else:
+        raise ValueError(f"Unsupported method: {method}")
+
+    solver = solver_class(molecule.native)
+
+    if method == "dft":
+        if not functional:
+            functional = "B3LYPG"
+            warnings.warn(
+                "DFT functional was not provided. Defaulting to 'B3LYPG (Gaussian Version)'.",
+                UserWarning,
+            )
+        solver.xc = functional  # Set functional for DFT
 
     if second_order:
         solver = solver.newton()
@@ -265,18 +337,13 @@ def _hartree_fock(
     else:
         solver.kernel(dm0=guess._D)
 
-    converged, stable = solver.converged, False
+    converged, stable = solver.converged, False if method == "hf" else None
 
-    if converged:
-        stability_options = {
-            "internal": True,
-            "external": False,
-            "return_status": True,
-        }
-
+    if converged and method == "hf":  # Stability analysis is only relevant for HF
+        stability_options = {"internal": True, "external": False, "return_status": True}
         mo, _, stable, _ = solver.stability(**stability_options)
-        retries = 0
 
+        retries = 0
         while not molecule.singlet and not stable and retries < 15:
             dm = solver.make_rdm1(mo, solver.mo_occ)
             solver = solver.run(dm)

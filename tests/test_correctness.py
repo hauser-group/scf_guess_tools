@@ -36,17 +36,22 @@ metric_path = path_fixture(
 )
 
 
-def test_core_guess(context, guess_path: str, guess_basis: str):
+@pytest.mark.parametrize("method", ["hf", "dft"])
+def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     backends = [Backend.PSI, Backend.PY]
     molecules = [load(guess_path, b) for b in backends]
     schemes = ["CORE", "1e"]
-    initials = [guess(m, guess_basis, s) for m, s in zip(molecules, schemes)]
+    initials = [
+        guess(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
+    ]
 
     assert similar(
         *initials, ignore=["molecule", "initial", "time"]
     ), "core guess wavefunctions must be similar"
 
-    finals = [calculate(m, guess_basis, s) for m, s in zip(molecules, schemes)]
+    finals = [
+        calculate(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
+    ]
     tolerance = 1e-2
 
     for final in finals:
@@ -64,31 +69,33 @@ def test_core_guess(context, guess_path: str, guess_basis: str):
         *f_scores, tolerance=tolerance
     ), f"core guesses must have similar f-scores {f_scores}"
 
-    diis_errors = []
-    for initial, final in zip(initials, finals):
-        diis_errors.append(
-            diis_error(initial.overlap(), initial.density(), initial.fock())
-        )
+    if method == "hf":
+        diis_errors = []
+        for initial, final in zip(initials, finals):
+            diis_errors.append(
+                diis_error(initial.overlap(), initial.density(), initial.fock())
+            )
 
-    assert similar(
-        *diis_errors, tolerance=tolerance
-    ), f"core guesses must have similar diis errors {diis_errors}"
+        assert similar(
+            *diis_errors, tolerance=tolerance
+        ), f"core guesses must have similar diis errors {diis_errors}"
 
-    energy_errors = []
-    for initial, final in zip(initials, finals):
-        energy_errors.append(
-            energy_error(initial.electronic_energy(), final.electronic_energy())
-        )
+        energy_errors = []
+        for initial, final in zip(initials, finals):
+            energy_errors.append(
+                energy_error(initial.electronic_energy(), final.electronic_energy())
+            )
 
-    assert similar(
-        *energy_errors, tolerance=tolerance
-    ), f"core guesses must have similar energy errors {energy_errors}"
+        assert similar(
+            *energy_errors, tolerance=tolerance
+        ), f"core guesses must have similar energy errors {energy_errors}"
 
 
-def test_converged(context, converged_path: str, converged_basis: str):
+@pytest.mark.parametrize("method", ["hf", "dft"])
+def test_converged(context, converged_path: str, converged_basis: str, method: str):
     backends = [Backend.PSI, Backend.PY]
     molecules = [load(converged_path, b) for b in backends]
-    finals = [calculate(m, converged_basis) for m in molecules]
+    finals = [calculate(m, converged_basis, method=method) for m in molecules]
 
     for final in finals:
         if not final.converged or not final.stable:
@@ -100,11 +107,12 @@ def test_converged(context, converged_path: str, converged_basis: str):
         f = f_score(final.overlap(), final.density(), final.density())
         assert 1 - f < 1e-10, "converged f-score must be close to 1"
 
-        d = diis_error(final.overlap(), final.density(), final.fock())
-        assert d < 1e-5, "diis error must be close to 0"
+        if method == "hf":
+            d = diis_error(final.overlap(), final.density(), final.fock())
+            assert d < 1e-5, "diis error must be close to 0"
 
-        e = energy_error(final.electronic_energy(), final.electronic_energy())
-        assert e < 1e-10, "energy error must be close to 0"
+            e = energy_error(final.electronic_energy(), final.electronic_energy())
+            assert e < 1e-10, "energy error must be close to 0"
 
     assert similar(
         *finals, ignore=["molecule", "initial", "time", "stable", "second_order"]
@@ -112,45 +120,65 @@ def test_converged(context, converged_path: str, converged_basis: str):
 
 
 @pytest.mark.parametrize(
-    "backend, metric",
+    "backend, metric, method",
     [
-        (backend, metric)
+        (backend, metric, method)
         for backend in [Backend.PSI, Backend.PY]
         for metric in [f_score, diis_error, energy_error]
+        for method in ["hf", "dft"]
     ],
 )
 def test_metric(
-    context, backend: Backend, metric_path: str, metric_basis: str, metric: Callable
+    context,
+    backend: Backend,
+    metric_path: str,
+    metric_basis: str,
+    metric: Callable,
+    method: str,
 ):
     molecule = load(metric_path, backend)
-    final = calculate(molecule, metric_basis)
+    final = calculate(molecule, metric_basis, method=method)
 
-    if not final.converged or not final.stable:
+    if (
+        not final.converged or not final.stable
+    ):  # dft not checked here bc everything would be skipped
         warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
         return
 
     scores = set()
     for scheme in guessing_schemes(backend):
-        initial = guess(molecule, metric_basis, scheme)
+        initial = guess(molecule, metric_basis, scheme, method=method)
 
         if metric == f_score:
             scores.add(f_score(initial.overlap(), initial.density(), final.density()))
-        elif metric == diis_error:
+        elif metric == diis_error and method == "hf":
             scores.add(diis_error(initial.overlap(), initial.density(), initial.fock()))
-        elif metric == energy_error:
+        elif metric == energy_error and method == "hf":
             scores.add(
                 energy_error(initial.electronic_energy(), final.electronic_energy())
             )
         else:
+            if method == "dft":
+                warnings.warn(f"Skipping metric {metric} for dft")
+                continue
             assert f"Unexpected metric {metric}"
 
     assert len(scores) > 1, "different schemes must yield different scores"
 
 
-@pytest.mark.parametrize("backend", [Backend.PSI, Backend.PY])
-def test_f_score(context, backend: Backend, metric_path: str, metric_basis: str):
+@pytest.mark.parametrize(
+    "backend, method",
+    [
+        (backend, method)
+        for backend in [Backend.PSI, Backend.PY]
+        for method in ["hf", "dft"]
+    ],
+)
+def test_f_score(
+    context, backend: Backend, metric_path: str, metric_basis: str, method: str
+):
     molecule = load(metric_path, backend)
-    final = calculate(molecule, metric_basis)
+    final = calculate(molecule, metric_basis, method=method)
 
     S = final.overlap()
     Df = final.density()
@@ -163,7 +191,7 @@ def test_f_score(context, backend: Backend, metric_path: str, metric_basis: str)
         return
 
     for scheme in guessing_schemes(backend):
-        initial = guess(molecule, metric_basis, scheme)
+        initial = guess(molecule, metric_basis, scheme, method=method)
 
         regular = f_score(S, initial.density(), Df)
         boosted = f_score(S, initial.density(), DfS, skip_final_overlap=True)
