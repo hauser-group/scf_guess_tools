@@ -73,7 +73,11 @@ class Wavefunction(Base, Object):
 
         Returns:
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+            None for DFT calculations.
         """
+        if self.method == "dft":
+            return None
+            #! use effective KS matrix for DFT
         if self.molecule.singlet:
             return Matrix(self._native.Fa())
 
@@ -342,6 +346,7 @@ def _scf_calculation(
 
     if method == "dft":
         if functional is None:
+            # b3lyp as in Gaussian: https://forum.psicode.org/t/b3lyp-defect-compatibility-with-gamess-and-gaussian/193
             functional = "B3LYP"  # Default to B3LYP if not provided
             import warnings
 

@@ -69,11 +69,11 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
-        """Compute the Fock matrix or effective KS matrix for method = 'dft'.
+        """Compute the Fock matrix.
 
         Returns:
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
-            A tuple of alpha and beta matrices for DFT.
+            None for DFT calculations.
         """
         if self.method == "dft":
             return None
@@ -337,6 +337,7 @@ def _scf_calculation(
 
     if method == "dft":
         if not functional:
+            # b3lyp == b3lypg (Gaussian version): https://pyscf.org/_modules/pyscf/dft/xcfun.html
             functional = "B3LYPG"
             warnings.warn(
                 "DFT functional was not provided. Defaulting to 'B3LYPG (Gaussian Version)'.",
