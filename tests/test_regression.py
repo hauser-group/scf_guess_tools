@@ -55,7 +55,7 @@ def test_regression_energy_match(context, name: str, method: str, basis: str):
                 warnings.warn(f"{name} ({backend}, {method}) not converged or stable")
                 continue
 
-            E_sim = result.electronic_energy()
+            E_sim = result.electronic_energy() + result.nuclear_repulsion_energy()
             E_ref = refernces[name][method][basis]
 
             assert similar(E_sim, E_ref, tolerance)

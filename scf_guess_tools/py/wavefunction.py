@@ -94,12 +94,28 @@ class Wavefunction(Base, Object):
         return Matrix(F[0]), Matrix(F[1])
 
     def _dft_electronic_energy(self) -> float:
-        """Compute the electronic energy for DFT calculations."""
-        if self.e_total is not None:
-            return float(self.e_total)
-        return float(self._native.e_tot)
+        """Compute the electronic energy for DFT calculations.
+
+        Returns:
+            The electronic energy.
+
+        Raises:
+            NotImplementedError: If no calculation was performed and the energy cannot be determined from the current wavefunction state (only for DFT calculations).
+        """
+        if self.e_energy is not None:
+            return float(self.e_energy)
+        raise NotImplementedError(
+            "DFT energy calculation not implemented if no calculation was performed"
+        )
 
     def nuclear_repulsion_energy(self):
+        """Compute the nuclear repulsion energy.
+
+        Note: This method is rather cheap O(n^2) in terms of #-atoms.
+
+        Returns:
+            The nuclear repulsion energy
+        """
         return self._molecule.native.energy_nuc()
 
     def __init__(
@@ -190,6 +206,8 @@ class Wavefunction(Base, Object):
             molecule: The molecule for which the wavefunction is created.
             basis: The basis set.
             scheme: The initial guess scheme. If None, the default scheme is used.
+            method: The calculation method to use (hf, dft).
+            functional: The functional to use for dft guess.
 
         Returns:
             The guessed wavefunction.
@@ -242,9 +260,9 @@ class Wavefunction(Base, Object):
         Args:
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
-            guess (optional): The initial guess, either as guessing scheme or another wavefunction.
-            method (optional): The calculation method to use (hf, dft)
-            functional (optional): The functional to use for dft calculations
+            guess: The initial guess, either as guessing scheme or another wavefunction.
+            method: The calculation method to use (hf, dft).
+            functional: The functional to use for dft calculations.
 
         Returns:
             The computed wavefunction.
@@ -267,7 +285,7 @@ class Wavefunction(Base, Object):
             )
 
         second_order = False
-        solver, converged, stable, e_total = calculate(second_order)
+        solver, converged, stable, total_energy = calculate(second_order)
         satisfied = lambda: converged and (molecule.singlet or stable)
 
         if method == "hf" and not satisfied():
@@ -275,7 +293,7 @@ class Wavefunction(Base, Object):
             so_max_iterations = 5
 
             while not satisfied() and so_max_iterations <= 50:
-                solver, converged, stable, e_total = calculate(
+                solver, converged, stable, total_energy = calculate(
                     second_order, so_max_iterations
                 )
                 so_max_iterations += 5
@@ -295,7 +313,8 @@ class Wavefunction(Base, Object):
             second_order=second_order if method == "hf" else None,
             method=method,
             functional=functional if method == "dft" else None,
-            e_total=e_total,
+            e_energy=total_energy - molecule.native.energy_nuc(),
+            total_energy=total_energy,
         )
 
 
@@ -324,6 +343,7 @@ def _scf_calculation(
         solver: PySCF SCF/DFT solver instance.
         converged: Whether the SCF calculation converged.
         stable: Whether the solution is stable.
+        total_energy: Total energy of the system.
     """
     if method == "hf":
         solver_class = RHF if molecule.singlet else UHF
@@ -369,6 +389,4 @@ def _scf_calculation(
             mo, _, stable, _ = solver.stability(**stability_options)
             retries += 1
 
-    e_energy = solver.e_tot
-
-    return solver, converged, stable, e_energy
+    return solver, converged, stable, solver.e_tot

@@ -76,9 +76,14 @@ class Wavefunction(Object, ABC):
         return self._method
 
     @property
-    def e_total(self) -> float:
-        """The total energy of the wavefunction."""
-        return self._e_total
+    def total_energy(self) -> float:
+        """The total energy of the wavefunction. Not applicable to guesses."""
+        return self._total_energy
+
+    @property
+    def e_energy(self) -> float:
+        """The electronic energy of the wavefunction. Not applicable to guesses."""
+        return self._e_energy
 
     @abstractmethod
     @timeable
@@ -124,6 +129,8 @@ class Wavefunction(Object, ABC):
 
     def nuclear_repulsion_energy(self) -> float:
         """Compute the nuclear repulsion energy.
+
+        Note: This method is rather cheap O(n^2) in terms of #-atoms.
 
         Returns:
             The computed nuclear repulsion energy.
@@ -181,7 +188,8 @@ class Wavefunction(Object, ABC):
         second_order: bool | None = None,
         functional: str | None = None,
         method: str | None = None,
-        e_total: float | None = None,
+        total_energy: float | None = None,
+        e_energy: float | None = None,
     ):
         """Initialize the wavefunction. Should not be used directly.
 
@@ -195,7 +203,8 @@ class Wavefunction(Object, ABC):
                 issues or instabilities.
             functional: The functional used for DFT calculations.
             method: The calculation method used (hf, dft).
-            e_total: The total energy of the wavefunction
+            total_energy: The total energy of the wavefunction (if applicable).
+            e_energy: The electronic energy of the wavefunction (if applicable).
         """
         self._basis = basis
         self._origin = origin
@@ -205,7 +214,8 @@ class Wavefunction(Object, ABC):
         self._second_order = second_order
         self._functional = functional
         self._method = method
-        self._e_total = e_total
+        self._total_energy = total_energy
+        self._e_energy = e_energy
 
     def __hash__(self) -> int:
         """Return a deterministic hash.
@@ -228,7 +238,8 @@ class Wavefunction(Object, ABC):
             self.second_order,
             self.functional,
             self.method,
-            self.e_total,
+            self.total_energy,
+            self.e_energy,
         )
 
         return int(joblib.hash(identity), 16)
@@ -249,7 +260,8 @@ class Wavefunction(Object, ABC):
             self.second_order,
             self.method,
             self.functional,
-            self.e_total,
+            self.total_energy,
+            self.e_energy,
         )
 
     def __setstate__(self, serialized):
@@ -269,7 +281,8 @@ class Wavefunction(Object, ABC):
             self._second_order,
             self._method,
             self._functional,
-            self._e_total,
+            self._total_energy,
+            self._e_energy,
         ) = serialized[1:]
 
     @classmethod

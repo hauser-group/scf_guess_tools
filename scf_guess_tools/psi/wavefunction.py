@@ -84,13 +84,28 @@ class Wavefunction(Base, Object):
         return (Matrix(self._native.Fa()), Matrix(self._native.Fb()))
 
     def _dft_electronic_energy(self) -> float:
-        """Compute the electronic energy for DFT calculations."""
-        e_total = (
-            self.e_total if self.e_total is not None else self.native.energy()
-        )  #! TODO: This may perform a new calculation!
-        return e_total
+        """Compute the electronic energy for DFT calculations.
+
+        Returns:
+            The electronic energy.
+
+        Raises:
+            NotImplementedError: If no calculation was performed and the energy cannot be determined from the current wavefunction state (only for DFT calculations).
+        """
+        if self.e_energy is not None:
+            return self.e_energy
+        raise NotImplementedError(
+            "DFT energy calculation not implemented if no calculation was performed"
+        )
 
     def nuclear_repulsion_energy(self):
+        """Compute the nuclear repulsion energy.
+
+        Note: This method is rather cheap O(n^2) in terms of #-atoms.
+
+        Returns:
+            The nuclear repulsion energy
+        """
         return self.molecule.native.nuclear_repulsion_energy()
 
     def __init__(
@@ -166,6 +181,7 @@ class Wavefunction(Base, Object):
             molecule: The molecule for which the wavefunction is created.
             basis: The basis set.
             scheme: The initial guess scheme. If None, the default scheme is used.
+            method: The calculation method to use for the guess (hf, dft)
 
         Returns:
             The guessed wavefunction.
@@ -225,9 +241,9 @@ class Wavefunction(Base, Object):
         Args:
             molecule: The molecule for which the wavefunction is computed.
             basis: The basis set.
-            method (optional): The calculation method to use (hf, dft)
-            guess (optional): The initial guess, either as guessing scheme or another wavefunction.
-            functional (optional): The functional to use for dft calculations
+            guess: The initial guess, either as guessing scheme or another wavefunction.
+            method: The calculation method to use (hf, dft)
+            functional: The functional to use for dft calculations
 
         Returns:
             The computed wavefunction.
@@ -248,7 +264,7 @@ class Wavefunction(Base, Object):
                     guess.native.to_file(filename=guess_file)
                     guess_str = "READ"
 
-                e_total, wfn = _scf_calculation(
+                e_energy, wfn = _scf_calculation(
                     molecule,
                     guess_str,
                     basis,
@@ -259,13 +275,13 @@ class Wavefunction(Base, Object):
                 )
                 converged, stable = _analyze_output(output_file, method)
 
-                return wfn, converged, stable, e_total
+                return wfn, converged, stable, e_energy
 
         wfn, converged, stable, second_order = None, False, False, False
         satisfied = lambda: converged and (molecule.singlet or stable)
 
         try:
-            wfn, converged, stable, e_total = calculate(second_order)
+            wfn, converged, stable, e_energy = calculate(second_order)
 
             if not satisfied():
                 raise RuntimeError()
@@ -281,7 +297,7 @@ class Wavefunction(Base, Object):
             if method != "dft":  # no second order corrections implemented for DFT
                 while not satisfied() and so_max_iterations <= 50:
                     try:
-                        wfn, converged, stable, e_total = calculate(
+                        wfn, converged, stable, e_energy = calculate(
                             second_order, so_max_iterations
                         )
                     except psi4.SCFConvergenceError as e:
@@ -305,7 +321,9 @@ class Wavefunction(Base, Object):
             second_order=(
                 second_order if method == "hf" else None
             ),  # second order not implemented for DFT
-            e_total=e_total,
+            e_energy=e_energy,
+            total_energy=e_energy
+            + molecule.native.nuclear_repulsion_energy(),  # cost of this function is O(n^2) in atoms -> very cheap
         )
 
 
