@@ -155,13 +155,13 @@ class Wavefunction(Object, ABC):
         F = self.fock() if fock is None else fock
 
         if self.method == "dft":
-            return self._dft_electronic_energy()
+            return float(self._dft_electronic_energy())
 
         if self.molecule.singlet:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3a_restricted-hartree-fock.ipynb
 
             result = (F + H) @ D
-            return result.trace
+            return float(result.trace)
         else:
             # https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/3c_unrestricted-hartree-fock.ipynb
 
@@ -169,7 +169,7 @@ class Wavefunction(Object, ABC):
             Fa, Fb = F
 
             terms = [(a @ b).trace for a, b in zip([Da + Db, Da, Db], [H, Fa, Fb])]
-            return 0.5 * sum(terms)
+            return float(0.5 * sum(terms))
 
     def __init__(
         self,
