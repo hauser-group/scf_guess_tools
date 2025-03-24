@@ -1,10 +1,8 @@
-# SCF Guess Tools
+# SCF Guess Tools v1.0
 
 [![Conda](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yaml/badge.svg)](https://github.com/hauser-group/scf_guess_tools/actions/workflows/test.yaml)
 
 ## About
-
-SCF Guess Tools v1.0
 
 [How to Contribute?](#how-to-contribute) This is a Python package providing a
 uniform, high-level interface abstracting  common functionality from the

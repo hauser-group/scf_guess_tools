@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "scf_guess_tools"
-version = "0.0.0"
+version = "1.0"
 requires-python = ">=3.8"
 description = "A collection of tools for working with initial guesses in SCF methods"
 readme = "README.md"
