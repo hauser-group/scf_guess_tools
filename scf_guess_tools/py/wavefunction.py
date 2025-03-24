@@ -97,8 +97,7 @@ class Wavefunction(Base, Object):
         """Compute the electronic energy for DFT calculations."""
         if self.e_total is not None:
             return float(self.e_total)
-        e_total = self._native.e_tot - self.native.mol.energy_nuc()
-        return float(e_total)
+        return float(self._native.e_tot)
 
     def nuclear_repulsion_energy(self):
         return self._molecule.native.energy_nuc()
@@ -370,6 +369,6 @@ def _scf_calculation(
             mo, _, stable, _ = solver.stability(**stability_options)
             retries += 1
 
-    e_energy = solver.e_tot - molecule.native.energy_nuc()
+    e_energy = solver.e_tot
 
     return solver, converged, stable, e_energy

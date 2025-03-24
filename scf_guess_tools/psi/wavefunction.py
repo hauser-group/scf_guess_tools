@@ -85,11 +85,10 @@ class Wavefunction(Base, Object):
 
     def _dft_electronic_energy(self) -> float:
         """Compute the electronic energy for DFT calculations."""
-        e_nuc = self.molecule.native.nuclear_repulsion_energy()
         e_total = (
             self.e_total if self.e_total is not None else self.native.energy()
-        )  #! TODO: This performs a new calculation!
-        return e_total - e_nuc
+        )  #! TODO: This may perform a new calculation!
+        return e_total
 
     def nuclear_repulsion_energy(self):
         return self.molecule.native.nuclear_repulsion_energy()
