@@ -4,6 +4,8 @@
 
 ## About
 
+SCF Guess Tools v1.0
+
 [How to Contribute?](#how-to-contribute) This is a Python package providing a
 uniform, high-level interface abstracting  common functionality from the
 [Psi4](https://psicode.org) and [PySCF](https://pyscf.org) packages for:
