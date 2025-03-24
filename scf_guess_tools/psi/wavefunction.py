@@ -73,11 +73,26 @@ class Wavefunction(Base, Object):
 
         Returns:
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
+            None for DFT calculations.
         """
+        if self.method == "dft":
+            return None
+            #! use effective KS matrix for DFT
         if self.molecule.singlet:
             return Matrix(self._native.Fa())
 
         return (Matrix(self._native.Fa()), Matrix(self._native.Fb()))
+
+    def _dft_electronic_energy(self) -> float:
+        """Compute the electronic energy for DFT calculations."""
+        e_nuc = self.molecule.native.nuclear_repulsion_energy()
+        e_total = (
+            self.e_total if self.e_total is not None else self.native.energy()
+        )  #! TODO: This performs a new calculation!
+        return e_total - e_nuc
+
+    def nuclear_repulsion_energy(self):
+        return self.molecule.native.nuclear_repulsion_energy()
 
     def __init__(
         self,
@@ -234,7 +249,7 @@ class Wavefunction(Base, Object):
                     guess.native.to_file(filename=guess_file)
                     guess_str = "READ"
 
-                _, wfn = _scf_calculation(
+                e_total, wfn = _scf_calculation(
                     molecule,
                     guess_str,
                     basis,
@@ -245,13 +260,13 @@ class Wavefunction(Base, Object):
                 )
                 converged, stable = _analyze_output(output_file, method)
 
-                return wfn, converged, stable
+                return wfn, converged, stable, e_total
 
         wfn, converged, stable, second_order = None, False, False, False
         satisfied = lambda: converged and (molecule.singlet or stable)
 
         try:
-            wfn, converged, stable = calculate(second_order)
+            wfn, converged, stable, e_total = calculate(second_order)
 
             if not satisfied():
                 raise RuntimeError()
@@ -267,7 +282,7 @@ class Wavefunction(Base, Object):
             if method != "dft":  # no second order corrections implemented for DFT
                 while not satisfied() and so_max_iterations <= 50:
                     try:
-                        wfn, converged, stable = calculate(
+                        wfn, converged, stable, e_total = calculate(
                             second_order, so_max_iterations
                         )
                     except psi4.SCFConvergenceError as e:
@@ -291,6 +306,7 @@ class Wavefunction(Base, Object):
             second_order=(
                 second_order if method == "hf" else None
             ),  # second order not implemented for DFT
+            e_total=e_total,
         )
 
 
@@ -330,6 +346,7 @@ def _scf_calculation(
 
     if method == "dft":
         if functional is None:
+            # b3lyp as in Gaussian: https://forum.psicode.org/t/b3lyp-defect-compatibility-with-gamess-and-gaussian/193
             functional = "B3LYP"  # Default to B3LYP if not provided
             import warnings
 

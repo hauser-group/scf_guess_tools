@@ -115,7 +115,7 @@ def equal_wavefunctions(
         a.electronic_energy(), b.electronic_energy(), rtol=1e-5, atol=1e-10
     ):
         print(
-            f"Wavefunction.electronic_energy differs for {a} and {b} by {a.electronic_energy() - b.electronic_energy()}"
+            f"Wavefunction.electronic_energy differs for {a} ({a.electronic_energy()}) and {b} ({b.electronic_energy()}) by {a.electronic_energy() - b.electronic_energy()}"
         )
         return False
 

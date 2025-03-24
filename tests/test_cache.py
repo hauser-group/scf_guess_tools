@@ -220,7 +220,7 @@ def test_wavefunction(
 
     to_ignore = []
     if method == "dft":  # dft doesn't give fock matrix!
-        to_ignore = ["fock", "electronic_energy"]
+        to_ignore = ["fock"]
 
     assert equal(
         uncached, original, ignore=to_ignore
@@ -261,7 +261,7 @@ def test_mixed(
     c_invocations, g_invocations = 0, 0
     to_ignore = []
     if method == "dft":  # dft doesn't give fock matrix!
-        to_ignore = ["fock", "electronic_energy"]
+        to_ignore = ["fock"]
 
     @cache()
     def c(*args, **kwargs):

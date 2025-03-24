@@ -69,11 +69,11 @@ class Wavefunction(Base, Object):
     @timeable
     @tuplifyable
     def fock(self) -> Matrix | tuple[Matrix, Matrix]:
-        """Compute the Fock matrix or effective KS matrix for method = 'dft'.
+        """Compute the Fock matrix.
 
         Returns:
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
-            A tuple of alpha and beta matrices for DFT.
+            None for DFT calculations.
         """
         if self.method == "dft":
             return None
@@ -92,6 +92,16 @@ class Wavefunction(Base, Object):
             return Matrix(F)
 
         return Matrix(F[0]), Matrix(F[1])
+
+    def _dft_electronic_energy(self) -> float:
+        """Compute the electronic energy for DFT calculations."""
+        if self.e_total is not None:
+            return float(self.e_total)
+        e_total = self._native.e_tot - self.native.mol.energy_nuc()
+        return float(e_total)
+
+    def nuclear_repulsion_energy(self):
+        return self._molecule.native.energy_nuc()
 
     def __init__(
         self,
@@ -160,8 +170,9 @@ class Wavefunction(Base, Object):
 
         if hasattr(self, "_method") and self._method == "dft":
             method = RKS if self._molecule.singlet else UKS
-
-        self._native = method(self._molecule.native)
+            self._native = method(self._molecule.native, self._functional)
+        else:
+            self._native = method(self._molecule.native)
 
     @classmethod
     @timeable
@@ -172,6 +183,7 @@ class Wavefunction(Base, Object):
         basis: str,
         scheme: str | None = None,
         method: str = "hf",
+        functional: str | None = None,
     ) -> Wavefunction:
         """Create an initial wavefunction guess.
 
@@ -189,8 +201,12 @@ class Wavefunction(Base, Object):
         molecule.native.basis = basis
         molecule.native.build()
 
-        method = RHF if molecule.singlet else UHF
-        solver = method(molecule.native)
+        if method == "dft":
+            method_ = RKS if molecule.singlet else UKS
+            solver = method_(molecule.native, functional)
+        else:  # "hf"
+            method_ = RHF if molecule.singlet else UHF
+            solver = method_(molecule.native)
 
         scheme = solver.init_guess if scheme is None else scheme
 
@@ -252,7 +268,7 @@ class Wavefunction(Base, Object):
             )
 
         second_order = False
-        solver, converged, stable = calculate(second_order)
+        solver, converged, stable, e_total = calculate(second_order)
         satisfied = lambda: converged and (molecule.singlet or stable)
 
         if method == "hf" and not satisfied():
@@ -260,7 +276,9 @@ class Wavefunction(Base, Object):
             so_max_iterations = 5
 
             while not satisfied() and so_max_iterations <= 50:
-                solver, converged, stable = calculate(second_order, so_max_iterations)
+                solver, converged, stable, e_total = calculate(
+                    second_order, so_max_iterations
+                )
                 so_max_iterations += 5
 
         end = process_time()
@@ -278,6 +296,7 @@ class Wavefunction(Base, Object):
             second_order=second_order if method == "hf" else None,
             method=method,
             functional=functional if method == "dft" else None,
+            e_total=e_total,
         )
 
 
@@ -318,6 +337,7 @@ def _scf_calculation(
 
     if method == "dft":
         if not functional:
+            # b3lyp == b3lypg (Gaussian version): https://pyscf.org/_modules/pyscf/dft/xcfun.html
             functional = "B3LYPG"
             warnings.warn(
                 "DFT functional was not provided. Defaulting to 'B3LYPG (Gaussian Version)'.",
@@ -350,4 +370,6 @@ def _scf_calculation(
             mo, _, stable, _ = solver.stability(**stability_options)
             retries += 1
 
-    return solver, converged, stable
+    e_energy = solver.e_tot - molecule.native.energy_nuc()
+
+    return solver, converged, stable, e_energy

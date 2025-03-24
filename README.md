@@ -8,7 +8,7 @@
 uniform, high-level interface abstracting  common functionality from the
 [Psi4](https://psicode.org) and [PySCF](https://pyscf.org) packages for:
 - Calculating the electronic wavefunction of molecules using the Hartree-Fock 
-method
+method or Density functional theory
 - Making initial guesses using classical guessing schemes
 - Scoring arbitrary initial guesses relative to the converged solution
 
@@ -57,6 +57,10 @@ print(f"solution converged: {final.converged}")
 print(f"solution stable: {final.stable}")
 print(f"solution required 2nd order scf: {final.second_order}")
 
+# for dft calculations one has to specify method='dft' and a supported funcitonal
+# due to the nature of dft some feature like fock matrix and therefore diis_error are not available
+final_dft = calculate(molecule, "pcseg-0", method="dft", functional="b3lyp")
+
 print(f"overlap: {final.overlap()}")
 
 # For non-singlets the alpha and beta matrices are returned as a tuple
@@ -87,6 +91,15 @@ matrix = build(array, backend)
 f = f_score(initial.overlap(), matrix, final.density())
 print(f"f-score of random unnormalized density: {f}")
 ```
+
+#### DFT-Functionals
+Auto-detection of dft-functionals strings is only possible as long as the backend supports the functional strings. Please refer to the respective documentation
+
+Psi4: https://psicode.org/psi4manual/master/dft_byfunctional.html
+
+PySCF: https://pyscf.org/user/dft.html#customizing-xc-functionals
+
+If not specified 'B3LYP-VWN3' is used. 
 
 ### Caching
 

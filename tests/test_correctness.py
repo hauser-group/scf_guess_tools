@@ -44,10 +44,10 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     initials = [
         guess(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
     ]
-
-    assert similar(
-        *initials, ignore=["molecule", "initial", "time"]
-    ), "core guess wavefunctions must be similar"
+    ignore = ["molecule", "initial", "time"]
+    if method == "dft":
+        ignore.append("fock")
+    assert similar(*initials, ignore=ignore), "core guess wavefunctions must be similar"
 
     finals = [
         calculate(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
@@ -69,6 +69,15 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
         *f_scores, tolerance=tolerance
     ), f"core guesses must have similar f-scores {f_scores}"
 
+    energy_errors = []
+    for initial, final in zip(initials, finals):
+        energy_errors.append(
+            energy_error(initial.electronic_energy(), final.electronic_energy())
+        )
+    assert similar(
+        *energy_errors, tolerance=tolerance
+    ), f"core guesses must have similar energy errors {energy_errors}"
+
     if method == "hf":
         diis_errors = []
         for initial, final in zip(initials, finals):
@@ -79,16 +88,6 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
         assert similar(
             *diis_errors, tolerance=tolerance
         ), f"core guesses must have similar diis errors {diis_errors}"
-
-        energy_errors = []
-        for initial, final in zip(initials, finals):
-            energy_errors.append(
-                energy_error(initial.electronic_energy(), final.electronic_energy())
-            )
-
-        assert similar(
-            *energy_errors, tolerance=tolerance
-        ), f"core guesses must have similar energy errors {energy_errors}"
 
 
 @pytest.mark.parametrize("method", ["hf", "dft"])
@@ -107,12 +106,12 @@ def test_converged(context, converged_path: str, converged_basis: str, method: s
         f = f_score(final.overlap(), final.density(), final.density())
         assert 1 - f < 1e-10, "converged f-score must be close to 1"
 
+        e = energy_error(final.electronic_energy(), final.electronic_energy())
+        assert e < 1e-10, "energy error must be close to 0"
+
         if method == "hf":
             d = diis_error(final.overlap(), final.density(), final.fock())
             assert d < 1e-5, "diis error must be close to 0"
-
-            e = energy_error(final.electronic_energy(), final.electronic_energy())
-            assert e < 1e-10, "energy error must be close to 0"
 
     assert similar(
         *finals, ignore=["molecule", "initial", "time", "stable", "second_order"]
@@ -153,7 +152,7 @@ def test_metric(
             scores.add(f_score(initial.overlap(), initial.density(), final.density()))
         elif metric == diis_error and method == "hf":
             scores.add(diis_error(initial.overlap(), initial.density(), initial.fock()))
-        elif metric == energy_error and method == "hf":
+        elif metric == energy_error:
             scores.add(
                 energy_error(initial.electronic_energy(), final.electronic_energy())
             )
