@@ -101,7 +101,8 @@ class Molecule(Base, Object):
         q = int(re.search(r"charge\s+(-?\d+)", lines[1]).group(1))
         m = int(re.search(r"multiplicity\s+(\d+)", lines[1]).group(1))
 
-        native = M(atom=path, charge=q, spin=m - 1, symmetry=symmetry)
-        native.atom = native._atom
+        # native = M(atom=path, charge=q, spin=m - 1, symmetry=symmetry)
+        # native.atom = native._atom
 
-        return Molecule(name, native)
+        # return Molecule(name, native)
+        return Molecule(name, M(atom=path, charge=q, spin=m - 1, symmetry=symmetry))

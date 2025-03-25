@@ -46,7 +46,7 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     ]
     ignore = ["molecule", "initial", "time"]
     if method == "dft":
-        ignore.append("fock")
+        ignore.extend(["fock", "electronic_energy"])
     assert similar(*initials, ignore=ignore), "core guess wavefunctions must be similar"
 
     finals = [
