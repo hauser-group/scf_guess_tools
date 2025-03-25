@@ -42,7 +42,7 @@ class Molecule(Base, Object):
     @property
     def geometry(self):
         """Molecular geometry in PySCF's native format."""
-        return self._native.atom
+        return self._native.tostring(format="xyz")
 
     @property
     def symmetry(self) -> bool:
@@ -77,8 +77,13 @@ class Molecule(Base, Object):
             serialized: The serialized molecule data.
         """
         super().__setstate__(serialized[0])
-        self._name, q, m, atom, symmetry = serialized[1:]
-        self._native = M(atom=atom, charge=q, spin=m - 1, symmetry=symmetry)
+        self._name, q, m, xyz, symmetry = serialized[1:]
+
+        native = Native(charge=q, spin=m - 1, symmetry=symmetry)
+        native.fromstring(xyz, format="xyz")
+        native.build()
+
+        self._native = native
 
     @classmethod
     @timeable
@@ -101,8 +106,11 @@ class Molecule(Base, Object):
         q = int(re.search(r"charge\s+(-?\d+)", lines[1]).group(1))
         m = int(re.search(r"multiplicity\s+(\d+)", lines[1]).group(1))
 
-        # native = M(atom=path, charge=q, spin=m - 1, symmetry=symmetry)
-        # native.atom = native._atom
+        loaded = M(atom=path, charge=q, spin=m - 1, symmetry=symmetry)
+        xyz = loaded.tostring(format="xyz")
 
-        # return Molecule(name, native)
-        return Molecule(name, M(atom=path, charge=q, spin=m - 1, symmetry=symmetry))
+        native = Native(charge=q, spin=m - 1, symmetry=symmetry)
+        native.fromstring(xyz, format="xyz")
+        native.build()
+
+        return Molecule(name, native)
