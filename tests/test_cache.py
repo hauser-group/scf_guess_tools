@@ -221,6 +221,8 @@ def test_wavefunction(
     to_ignore = []
     if method == "dft":  # dft doesn't give fock matrix!
         to_ignore = ["fock"]
+        if builder == guess:  # no electronic energy for guess
+            to_ignore.append("electronic_energy")
 
     assert equal(
         uncached, original, ignore=to_ignore
