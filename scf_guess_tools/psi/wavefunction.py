@@ -264,7 +264,7 @@ class Wavefunction(Base, Object):
                     guess.native.to_file(filename=guess_file)
                     guess_str = "READ"
 
-                e_energy, wfn = _scf_calculation(
+                total_energy, wfn = _scf_calculation(
                     molecule,
                     guess_str,
                     basis,
@@ -275,13 +275,13 @@ class Wavefunction(Base, Object):
                 )
                 converged, stable = _analyze_output(output_file, method)
 
-                return wfn, converged, stable, e_energy
+                return wfn, converged, stable, total_energy
 
         wfn, converged, stable, second_order = None, False, False, False
         satisfied = lambda: converged and (molecule.singlet or stable)
 
         try:
-            wfn, converged, stable, e_energy = calculate(second_order)
+            wfn, converged, stable, total_energy = calculate(second_order)
 
             if not satisfied():
                 raise RuntimeError()
@@ -297,7 +297,7 @@ class Wavefunction(Base, Object):
             if method != "dft":  # no second order corrections implemented for DFT
                 while not satisfied() and so_max_iterations <= 50:
                     try:
-                        wfn, converged, stable, e_energy = calculate(
+                        wfn, converged, stable, total_energy = calculate(
                             second_order, so_max_iterations
                         )
                     except psi4.SCFConvergenceError as e:
@@ -321,9 +321,8 @@ class Wavefunction(Base, Object):
             second_order=(
                 second_order if method == "hf" else None
             ),  # second order not implemented for DFT
-            e_energy=e_energy,
-            total_energy=e_energy
-            + molecule.native.nuclear_repulsion_energy(),  # cost of this function is O(n^2) in atoms -> very cheap
+            e_energy=total_energy - molecule.native.nuclear_repulsion_energy(),
+            total_energy=total_energy,  # cost of this function is O(n^2) in atoms -> very cheap
         )
 
 
