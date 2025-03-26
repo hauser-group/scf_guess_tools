@@ -88,7 +88,7 @@ def equal_wavefunctions(
         print(f"Wavefunction.molecule differs for {a} and {b}")
         return False
 
-    if not "initial" in ignore and not equal(a.initial, b.initial):
+    if not "initial" in ignore and not equal(a.initial, b.initial, ignore=ignore):
         print(f"Wavefunction.initial differs for {a} and {b}")
         return False
 

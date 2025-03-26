@@ -174,6 +174,7 @@ class Wavefunction(Base, Object):
         basis: str,
         scheme: str | None = None,
         method: str = "hf",
+        functional: str | None = None,
     ) -> Wavefunction:
         """Create an initial wavefunction guess.
 
@@ -181,7 +182,8 @@ class Wavefunction(Base, Object):
             molecule: The molecule for which the wavefunction is created.
             basis: The basis set.
             scheme: The initial guess scheme. If None, the default scheme is used.
-            method: The calculation method to use for the guess (hf, dft)
+            method: The calculation method to use for the guess (hf, dft).
+            functional: The functional to use for dft guess.
 
         Returns:
             The guessed wavefunction.
@@ -193,11 +195,28 @@ class Wavefunction(Base, Object):
             psi4.set_options({"BASIS": basis, "GUESS": scheme})
             basis_set = psi4.core.BasisSet.build(molecule.native, target=basis)
             ref_wfn = psi4.core.Wavefunction.build(molecule.native, basis_set)
-            start_wfn = psi4.driver.scf_wavefunction_factory(
-                name="HF",
-                ref_wfn=ref_wfn,
-                reference="RHF" if molecule.singlet else "UHF",
-            )
+            if method == "hf":
+                start_wfn = psi4.driver.scf_wavefunction_factory(
+                    name="HF",
+                    ref_wfn=ref_wfn,
+                    reference="RHF" if molecule.singlet else "UHF",
+                )
+            elif method == "dft":
+                if functional is None:
+                    functional = "B3LYP"
+                    import warnings
+
+                    warnings.warn(
+                        "DFT functional was not provided. Defaulting to 'B3LYP'.",
+                        UserWarning,
+                    )
+                start_wfn = psi4.driver.scf_wavefunction_factory(
+                    name=functional,
+                    ref_wfn=ref_wfn,
+                    reference="RKS" if molecule.singlet else "UKS",
+                )
+            else:
+                raise ValueError(f"Unsupported method: {method}")
 
             start_wfn.form_H()
             start_wfn.form_Shalf()
@@ -220,6 +239,7 @@ class Wavefunction(Base, Object):
                 origin="guess",
                 time=end - start,
                 method=method,
+                functional=functional,
             )
 
     @classmethod
@@ -279,22 +299,23 @@ class Wavefunction(Base, Object):
 
         wfn, converged, stable, second_order = None, False, False, False
         satisfied = lambda: converged and (molecule.singlet or stable)
+        satisfied_dft = lambda: converged
 
         try:
             wfn, converged, stable, total_energy = calculate(second_order)
-
-            if not satisfied():
+            if method == "hf" and not satisfied() or not satisfied_dft():
                 raise RuntimeError()
+
         except (
             psi4.driver.p4util.exceptions.ValidationError
         ) as e:  # method might not support Validation
             print(f"Validation Error: {e} - ")
 
-        except:
+        except Exception as e:
             second_order = True
             so_max_iterations = 5
 
-            if method != "dft":  # no second order corrections implemented for DFT
+            if method == "hf":  # no second order corrections implemented for DFT
                 while not satisfied() and so_max_iterations <= 50:
                     try:
                         wfn, converged, stable, total_energy = calculate(
@@ -304,6 +325,12 @@ class Wavefunction(Base, Object):
                         wfn = e.wfn
 
                     so_max_iterations += 5
+            else:  # DFT
+                if isinstance(e, psi4.SCFConvergenceError):
+                    wfn = e.wfn
+                    total_energy = 0  # not converged we have to set some value
+                else:
+                    raise e  # re-raise the exception if method is other than dft
 
         end = process_time()
 

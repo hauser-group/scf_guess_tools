@@ -44,7 +44,8 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     functional = "b3lyp" if method == "dft" else None
 
     initials = [
-        guess(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
+        guess(m, guess_basis, s, method=method, functional=functional)
+        for m, s in zip(molecules, schemes)
     ]
     ignore = ["molecule", "initial", "time"]
     if method == "dft":
@@ -149,24 +150,32 @@ def test_metric(
     metric: Callable,
     method: str,
 ):
-    molecule = load(metric_path, backend)
-    final = calculate(molecule, metric_basis, method=method)
+    functional = "b3lyp" if method == "dft" else None
 
-    if method == "hf" and (
-        not final.converged or not final.stable
-    ):  # dft not checked here bc everything would be skipped
-        warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
+    molecule = load(metric_path, backend)
+    final = calculate(molecule, metric_basis, method=method, functional=functional)
+
+    if not final.converged or (
+        method == "hf" and not final.stable
+    ):  # dft doesn't support stability check
+        warnings.warn(
+            f"Solution for {final.molecule.name} not converged or stable for {method}, skipping"
+        )
         return
 
     scores = set()
     for scheme in guessing_schemes(backend):
-        initial = guess(molecule, metric_basis, scheme, method=method)
+        initial = guess(
+            molecule, metric_basis, scheme, method=method, functional=functional
+        )
 
         if metric == f_score:
             scores.add(f_score(initial.overlap(), initial.density(), final.density()))
         elif metric == diis_error and method == "hf":
             scores.add(diis_error(initial.overlap(), initial.density(), initial.fock()))
-        elif metric == energy_error:
+        elif (
+            metric == energy_error and method == "hf"
+        ):  # dft doesn't support energy before calculation - in initial
             scores.add(
                 energy_error(initial.electronic_energy(), final.electronic_energy())
             )
@@ -190,8 +199,9 @@ def test_metric(
 def test_f_score(
     context, backend: Backend, metric_path: str, metric_basis: str, method: str
 ):
+    functional = "b3lyp" if method == "dft" else None
     molecule = load(metric_path, backend)
-    final = calculate(molecule, metric_basis, method=method)
+    final = calculate(molecule, metric_basis, method=method, functional=functional)
 
     S = final.overlap()
     Df = final.density()
@@ -208,7 +218,9 @@ def test_f_score(
         return
 
     for scheme in guessing_schemes(backend):
-        initial = guess(molecule, metric_basis, scheme, method=method)
+        initial = guess(
+            molecule, metric_basis, scheme, method=method, functional=functional
+        )
 
         regular = f_score(S, initial.density(), Df)
         boosted = f_score(S, initial.density(), DfS, skip_final_overlap=True)
@@ -238,4 +250,10 @@ def test_hf_vs_dft(
         )
         return
 
-    assert equal(hf_final, dft_final, ignore=["fock"])
+    # tolerance has to be higher here than default because dft and hf densities differ a bit (because dft yields solutions with lower energy)
+    assert similar(
+        hf_final,
+        dft_final,
+        tolerance=1e-4,
+        ignore=["fock", "time", "stable", "second_order"],
+    ), "hf and dft wavefunctions must be similar"

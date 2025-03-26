@@ -48,11 +48,15 @@ def test_regression_energy_match(
             result = calculate(molecule, basis, method=method)
         else:
             result = calculate(molecule, basis, method="dft", functional=method)
-        if method == "hf" and (
-            not result.converged or not result.stable
-        ):  #! do not check for dft!
-            warnings.warn(f"{name} ({backend}, {method}) not converged or stable")
+
+        if not result.converged or (
+            method == "hf" and not result.stable
+        ):  # dft doesn't support stability check
+            warnings.warn(
+                f"Solution for {result.molecule.name} not converged or stable for {method}, skipping"
+            )
             return
+
         E_sim = result.electronic_energy() + result.nuclear_repulsion_energy()
         E_ref = refernces[name][method][basis]
         diff = abs(E_sim - E_ref)
@@ -87,10 +91,12 @@ def test_backend_energy_match(context, name: str, method: str, basis: str):
                 result = calculate(molecule, basis, method="dft", functional=method)
             backend_energies.append(result.electronic_energy())
 
-            if method == "hf" and (
-                not result.converged or not result.stable
-            ):  #! do not check for dft!
-                warnings.warn(f"{name} ({backend}, {method}) not converged or stable")
+            if not result.converged or (
+                method == "hf" and not result.stable
+            ):  # dft doesn't support stability check
+                warnings.warn(
+                    f"Solution for {result.molecule.name} not converged or stable for {method}, skipping"
+                )
                 continue
 
         except FileNotFoundError:
@@ -119,8 +125,11 @@ def test_dft_lower_than_hf(context, name: str, basis: str):
             result_hf = calculate(molecule, basis, method="hf")
             result_dft = calculate(molecule, basis, method="dft", functional="b3lyp")
 
-            if not result_hf.converged or not result_hf.stable:  # check only for hf
+            if not result_hf.converged or not result_hf.stable:
                 warnings.warn(f"{name} ({backend}, hf) not converged or stable")
+                continue
+            if not result_dft.converged:
+                warnings.warn(f"{name} ({backend}, dft) not converged")
                 continue
 
             assert (

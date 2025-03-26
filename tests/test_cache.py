@@ -143,10 +143,15 @@ def test_matrix(
     symmetry: bool,
 ):
     molecule = load(matrix_path, backend, symmetry=symmetry)
+    functional = "b3lyp" if method == "dft" else None
     if builder == guess:
-        wavefunction = guess(molecule, basis, scheme, method=method)
+        wavefunction = guess(
+            molecule, basis, scheme, method=method, functional=functional
+        )
     else:
-        wavefunction = calculate(molecule, basis, scheme, method=method)
+        wavefunction = calculate(
+            molecule, basis, scheme, method=method, functional=functional
+        )
 
     matrices = [wavefunction.overlap(), wavefunction.core_hamiltonian()]
     matrices.extend(wavefunction.density(tuplify=True))
@@ -202,11 +207,14 @@ def test_wavefunction(
     builder: Callable,
     symmetry: bool,
 ):
+    functional = "b3lyp" if method == "dft" else None
     molecule = load(wavefunction_path, backend, symmetry=symmetry)
     if builder == guess:
-        original = guess(molecule, basis, scheme, method=method)
+        original = guess(molecule, basis, scheme, method=method, functional=functional)
     else:
-        original = calculate(molecule, basis, scheme, method=method)
+        original = calculate(
+            molecule, basis, scheme, method=method, functional=functional
+        )
     invocations = 0
 
     @cache()
@@ -261,9 +269,13 @@ def test_mixed(
 ):
     basis = "pcseg-0"
     c_invocations, g_invocations = 0, 0
+    functional = "b3lyp" if method == "dft" else None
     to_ignore = []
     if method == "dft":  # dft doesn't give fock matrix!
-        to_ignore = ["fock"]
+        to_ignore = [
+            "fock",
+            "electronic_energy",
+        ]  # also ignore electronic energy for guess because initials are internally tested bellow!
 
     @cache()
     def c(*args, **kwargs):
@@ -281,14 +293,14 @@ def test_mixed(
     molecule2 = load(mixed_path, backend, symmetry=symmetry)
     assert hash(molecule1) == hash(molecule2), "molecules must be identical"
 
-    initial1 = g(molecule1, basis, scheme)
+    initial1 = g(molecule1, basis, scheme, method=method, functional=functional)
     assert g_invocations == 1, "guess must be invoked once"
-    final1 = c(molecule1, basis, initial1)
+    final1 = c(molecule1, basis, initial1, method=method, functional=functional)
     assert c_invocations == 1, "calculate must be invoked once"
 
-    initial2 = g(molecule2, basis, scheme)
+    initial2 = g(molecule2, basis, scheme, method=method, functional=functional)
     assert g_invocations == 1, "guess should be cached now"
-    final2 = c(molecule2, basis, initial2)
+    final2 = c(molecule2, basis, initial2, method=method, functional=functional)
     assert c_invocations == 1, "calculate must be invoked once"
 
     f_invocations = 0
