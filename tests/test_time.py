@@ -56,8 +56,9 @@ def test_build(
     method: str,
     build: Callable,
 ):
+    functional = "b3lyp" if method == "dft" else None
     molecule = load(basics_path, backend)
-    result = build(molecule, basis, time=time, method=method)
+    result = build(molecule, basis, time=time, method=method, functional=functional)
 
     if time is None or time == False:
         assert isinstance(
@@ -93,8 +94,9 @@ def test_wavefunction(
     method: str,
     build: Callable,
 ):
+    functional = "b3lyp" if method == "dft" else None
     molecule = load(wavefunction_path, backend)
-    wavefunction = build(molecule, basis, method=method)
+    wavefunction = build(molecule, basis, method=method, functional=functional)
 
     if attribute == "fock" and method == "dft":
         warnings.warn("Skipping fock matrix for dft")
@@ -119,12 +121,13 @@ def test_wavefunction(
 
 @pytest.mark.parametrize("method", ["hf", "dft"])
 def test_times(context, backend: Backend, times_path: str, basis: str, method: str):
+    functional = "b3lyp" if method == "dft" else None
     molecule = load(times_path, backend)
     initial_1, initial_time_1 = guess(
-        molecule, basis, cache=True, time=True, method=method
+        molecule, basis, cache=True, time=True, method=method, functional=functional
     )
     final_1, final_time_1 = calculate(
-        molecule, basis, cache=True, time=True, method=method
+        molecule, basis, cache=True, time=True, method=method, functional=functional
     )
 
     assert (
@@ -139,10 +142,10 @@ def test_times(context, backend: Backend, times_path: str, basis: str, method: s
     assert final_1.time >= initial_1.time, "calculation must take longer than guessing"
 
     initial_2, initial_time_2 = guess(
-        molecule, basis, cache=True, time=True, method=method
+        molecule, basis, cache=True, time=True, method=method, functional=functional
     )
     final_2, final_time_2 = calculate(
-        molecule, basis, cache=True, time=True, method=method
+        molecule, basis, cache=True, time=True, method=method, functional=functional
     )
 
     assert initial_2.time == initial_1.time, "cached time must remain unchanged"
