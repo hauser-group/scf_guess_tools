@@ -41,6 +41,8 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     backends = [Backend.PSI, Backend.PY]
     molecules = [load(guess_path, b) for b in backends]
     schemes = ["CORE", "1e"]
+    functional = "b3lyp" if method == "dft" else None
+
     initials = [
         guess(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
     ]
@@ -50,14 +52,18 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
     assert similar(*initials, ignore=ignore), "core guess wavefunctions must be similar"
 
     finals = [
-        calculate(m, guess_basis, s, method=method) for m, s in zip(molecules, schemes)
+        calculate(m, guess_basis, s, method=method, functional=functional)
+        for m, s in zip(molecules, schemes)
     ]
+
     tolerance = 1e-2
 
     for final in finals:
-        if not final.converged or not final.stable:
+        if not final.converged or (
+            method == "hf" and not final.stable
+        ):  # dft doesn't support stability check
             warnings.warn(
-                f"Solution for {final.molecule.name} not converged or stable, skipping"
+                f"Solution for {final.molecule.name} not converged or stable for {method}, skipping"
             )
             return
 
@@ -69,16 +75,18 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
         *f_scores, tolerance=tolerance
     ), f"core guesses must have similar f-scores {f_scores}"
 
-    energy_errors = []
-    for initial, final in zip(initials, finals):
-        energy_errors.append(
-            energy_error(initial.electronic_energy(), final.electronic_energy())
-        )
-    assert similar(
-        *energy_errors, tolerance=tolerance
-    ), f"core guesses must have similar energy errors {energy_errors}"
-
     if method == "hf":
+        energy_errors = []
+        for initial, final in zip(
+            initials, finals
+        ):  # dft only supports energy after calculation
+            energy_errors.append(
+                energy_error(initial.electronic_energy(), final.electronic_energy())
+            )
+        assert similar(
+            *energy_errors, tolerance=tolerance
+        ), f"core guesses must have similar energy errors {energy_errors}"
+
         diis_errors = []
         for initial, final in zip(initials, finals):
             diis_errors.append(
@@ -94,12 +102,19 @@ def test_core_guess(context, guess_path: str, guess_basis: str, method: str):
 def test_converged(context, converged_path: str, converged_basis: str, method: str):
     backends = [Backend.PSI, Backend.PY]
     molecules = [load(converged_path, b) for b in backends]
-    finals = [calculate(m, converged_basis, method=method) for m in molecules]
+    functional = "b3lyp" if method == "dft" else None
+    finals = [
+        calculate(m, converged_basis, method=method, functional=functional)
+        for m in molecules
+    ]
+    to_ignore = ["molecule", "initial", "time", "stable", "second_order"]
 
     for final in finals:
-        if not final.converged or not final.stable:
+        if not final.converged or (
+            method == "hf" and not final.stable
+        ):  # dft doesn't support stability check
             warnings.warn(
-                f"Solution for {final.molecule.name} not converged or stable, skipping"
+                f"Solution for {final.molecule.name} not converged or stable for {method}, skipping"
             )
             return
 
@@ -109,13 +124,12 @@ def test_converged(context, converged_path: str, converged_basis: str, method: s
         e = energy_error(final.electronic_energy(), final.electronic_energy())
         assert e < 1e-10, "energy error must be close to 0"
 
-        if method == "hf":
+        if method == "hf":  # fock is not available for dft
             d = diis_error(final.overlap(), final.density(), final.fock())
             assert d < 1e-5, "diis error must be close to 0"
-
-    assert similar(
-        *finals, ignore=["molecule", "initial", "time", "stable", "second_order"]
-    ), "converged wavefunctions must be similar"
+    if method == "dft":
+        to_ignore.extend(["fock"])
+    assert similar(*finals, ignore=to_ignore), "converged wavefunctions must be similar"
 
 
 @pytest.mark.parametrize(
@@ -138,7 +152,7 @@ def test_metric(
     molecule = load(metric_path, backend)
     final = calculate(molecule, metric_basis, method=method)
 
-    if (
+    if method == "hf" and (
         not final.converged or not final.stable
     ):  # dft not checked here bc everything would be skipped
         warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
@@ -161,8 +175,8 @@ def test_metric(
                 warnings.warn(f"Skipping metric {metric} for dft")
                 continue
             assert f"Unexpected metric {metric}"
-
-    assert len(scores) > 1, "different schemes must yield different scores"
+    if method == "hf":
+        assert len(scores) > 1, "different schemes must yield different scores"
 
 
 @pytest.mark.parametrize(
@@ -185,8 +199,12 @@ def test_f_score(
     DfS = tuple(df @ S for df in tuplify(Df))
     DfS = DfS if isinstance(Df, tuple) else DfS[0]
 
-    if not final.converged or not final.stable:
-        warnings.warn(f"Solution for {molecule.name} not converged or stable, skipping")
+    if not final.converged or (
+        method == "hf" and not final.stable
+    ):  # dft doesn't support stability check
+        warnings.warn(
+            f"Solution for {final.molecule.name} not converged or stable for {method}, skipping"
+        )
         return
 
     for scheme in guessing_schemes(backend):
@@ -198,3 +216,26 @@ def test_f_score(
         assert np.isclose(
             regular, boosted, rtol=1e-10
         ), f"regular and boosted f-score must be equal {regular} {boosted}"
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [(backend) for backend in [Backend.PSI, Backend.PY]],
+)
+def test_hf_vs_dft(
+    context, converged_path: str, converged_basis: str, backend: Backend
+):
+    molecule = load(converged_path, backend)
+    hf_final = calculate(molecule, converged_basis, method="hf")
+    dft_final = calculate(molecule, converged_basis, method="dft", functional="b3lyp")
+
+    if any(
+        not final.converged or (method == "hf" and not final.stable)
+        for final, method in zip([hf_final, dft_final], ["hf", "dft"])
+    ):  # dft doesn't support stability check
+        warnings.warn(
+            f"Solution for {hf_final.molecule.name} not converged or stable, skipping"
+        )
+        return
+
+    assert equal(hf_final, dft_final, ignore=["fock"])
