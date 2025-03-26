@@ -248,11 +248,10 @@ def test_wavefunction(
 
 
 @pytest.mark.parametrize(
-    "backend, builder, scheme, method, symmetry",
+    "backend, scheme, method, symmetry",
     [
-        (backend, builder, scheme, method, symmetry)
+        (backend, scheme, method, symmetry)
         for backend in [Backend.PSI, Backend.PY]
-        for builder in [guess, calculate]
         for scheme in [None, *guessing_schemes(backend)][::2]
         for method in ["hf", "dft"]
         for symmetry in [True, False]
@@ -263,7 +262,6 @@ def test_mixed(
     backend: Backend,
     mixed_path: str,
     scheme: str,
-    builder: Callable,
     method: str,
     symmetry: bool,
 ):
