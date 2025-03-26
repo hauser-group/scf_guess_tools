@@ -368,7 +368,7 @@ def _scf_calculation(
     Args:
         molecule: The molecule to compute.
         guess: Initial guess method.
-        basis: Basis set.
+        basis: Basis set (shorthand or path to basis set file with .gbs ending).
         method: "hf" for Hartree-Fock, "dft" for Density Functional Theory.
         functional: The exchange-correlation functional (only for DFT).
         second_order: Enable second-order SCF.
@@ -380,6 +380,19 @@ def _scf_calculation(
     method = method.lower()
     if method not in ("hf", "dft"):
         raise ValueError(f"Unsupported method: {method}")
+
+    if ".gbs" in basis:
+        # read in basis set file
+        # see also https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/1g_basis-sets.ipynb
+        import pathlib
+
+        if not os.path.exists(basis):
+            raise FileNotFoundError(f"Basis set file {basis} not found")
+        path_ = pathlib.Path(basis)
+        basis_set_name = path_.stem
+        with open(basis, "r") as f:
+            psi4.qcdb.libmintsbasisset.basishorde[basis_set_name] = f.read()
+        basis = basis_set_name
 
     options = {
         "BASIS": basis,
