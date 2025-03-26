@@ -1,0 +1,6 @@
+4
+molecule "ph3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+P          0.00000        0.12741        0.00000
+H         -1.19034       -0.63704        0.00000
+H          0.59517       -0.63704        1.03087
+H          0.59517       -0.63704       -1.03087

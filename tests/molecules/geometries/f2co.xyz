@@ -1,0 +1,6 @@
+4
+molecule "f2co" dataset "non-multireference W4-17" charge 0 multiplicity 1
+O          0.00000        0.00000        1.31221
+C          0.00000        0.00000        0.14077
+F          0.00000        1.05866       -0.63013
+F          0.00000       -1.05866       -0.63013

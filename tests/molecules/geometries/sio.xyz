@@ -1,0 +1,4 @@
+2
+molecule "sio" dataset "non-multireference W4-17" charge 0 multiplicity 1
+Si         0.00000        0.00000        0.55165
+O          0.00000        0.00000       -0.96539

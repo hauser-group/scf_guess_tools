@@ -1,0 +1,31 @@
+{% set name = "scf_guess_tools" %}
+{% set version = "1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - flit
+  run:
+    - python >=3.8,<=3.12
+    - psi4 1.9.1
+    - pyscf 2.8.0
+    - numpy
+    - joblib
+
+about:
+  home: https://github.com/hauser-group/scf_guess_tools
+  license: LGPL-3.0-or-later
+  license_file: LICENSE.md
+  license_family: LGPL
+  summary: 'A collection of tools for working with initial guesses in SCF methods'

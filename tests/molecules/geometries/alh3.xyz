@@ -1,0 +1,6 @@
+4
+molecule "alh3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+Al         0.00000        0.00000        0.00000
+H          0.00000        0.00000        1.58050
+H          0.00000        1.36875       -0.79025
+H          0.00000       -1.36875       -0.79025

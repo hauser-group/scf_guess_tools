@@ -1,0 +1,5 @@
+3
+molecule "hocl" dataset "non-multireference W4-17" charge 0 multiplicity 1
+O          0.03617        1.09962        0.00000
+H         -0.90432        1.31076        0.00000
+Cl         0.03617       -0.59457        0.00000

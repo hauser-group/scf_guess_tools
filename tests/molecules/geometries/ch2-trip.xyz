@@ -1,0 +1,5 @@
+3
+molecule "ch2-trip" dataset "non-multireference W4-17" charge 0 multiplicity 3
+C          0.00000        0.00000        0.10601
+H          0.00000        0.99029       -0.31803
+H          0.00000       -0.99029       -0.31803

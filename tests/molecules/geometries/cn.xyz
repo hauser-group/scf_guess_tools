@@ -1,0 +1,4 @@
+2
+molecule "cn" dataset "non-multireference W4-17" charge 0 multiplicity 2
+C          0.00000        0.00000       -0.63098
+N          0.00000        0.00000        0.54084

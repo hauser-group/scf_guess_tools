@@ -1,0 +1,5 @@
+3
+molecule "hno" dataset "non-multireference W4-17" charge 0 multiplicity 1
+N          0.06262        0.58499        0.00000
+H         -0.93929        0.91072        0.00000
+O          0.06262       -0.62570        0.00000

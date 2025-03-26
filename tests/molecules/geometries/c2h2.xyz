@@ -1,0 +1,6 @@
+4
+molecule "c2h2" dataset "non-multireference W4-17" charge 0 multiplicity 1
+H          0.00000        0.00000        1.66665
+C          0.00000        0.00000        0.60325
+C          0.00000        0.00000       -0.60325
+H          0.00000        0.00000       -1.66665

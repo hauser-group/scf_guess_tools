@@ -1,0 +1,6 @@
+4
+molecule "h2no" dataset "non-multireference W4-17" charge 0 multiplicity 2
+N          0.00000        0.00000       -0.54011
+O          0.00000        0.00000        0.73315
+H          0.00000        0.87610       -1.04220
+H          0.00000       -0.87610       -1.04220

@@ -1,0 +1,5 @@
+3
+molecule "so2" dataset "non-multireference W4-17" charge 0 multiplicity 1
+S          0.00000        0.00000        0.36221
+O          0.00000        1.23932       -0.36221
+O          0.00000       -1.23932       -0.36221

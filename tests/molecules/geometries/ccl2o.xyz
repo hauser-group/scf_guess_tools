@@ -1,0 +1,6 @@
+4
+molecule "ccl2o" dataset "non-multireference W4-17" charge 0 multiplicity 1
+C          0.00000        0.00000        0.49484
+O          0.00000        0.00000        1.67351
+Cl         0.00000        1.44411       -0.48109
+Cl         0.00000       -1.44411       -0.48109

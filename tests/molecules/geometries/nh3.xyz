@@ -1,0 +1,6 @@
+4
+molecule "nh3" dataset "non-multireference W4-17" charge 0 multiplicity 1
+N          0.00000        0.11667        0.00000
+H          0.93472       -0.27223        0.00000
+H         -0.46736       -0.27223        0.80949
+H         -0.46736       -0.27223       -0.80949

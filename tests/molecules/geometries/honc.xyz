@@ -1,0 +1,6 @@
+4
+molecule "honc" dataset "non-multireference W4-17" charge 0 multiplicity 1
+H          0.93146       -1.34047        0.00000
+O         -0.00279       -1.09523        0.00000
+N          0.00000        0.23827        0.00000
+C         -0.15153        1.40573        0.00000
