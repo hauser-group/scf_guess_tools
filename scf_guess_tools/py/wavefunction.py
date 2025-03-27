@@ -7,6 +7,7 @@ from .core import Object, guessing_schemes
 from .matrix import Matrix
 from .molecule import Molecule
 from numpy.typing import NDArray
+from pyscf import gto
 from pyscf.scf import RHF, UHF
 from pyscf.dft import RKS, UKS
 from pyscf.scf.hf import SCF as Native
@@ -215,7 +216,13 @@ class Wavefunction(Base, Object):
 
         start = process_time()
 
-        molecule.native.basis = basis
+        if ".gbs" in basis:
+            with open(basis, "r") as f:
+                basis_str = f.read()
+            print(f"Loading custom basis from {basis}")
+            molecule.native.basis = gto.basis.parse_nwchem.parse(basis_str)
+        else:
+            molecule.native.basis = basis
         molecule.native.build()
 
         if method == "dft":
@@ -270,7 +277,13 @@ class Wavefunction(Base, Object):
         method = method.lower()
         start = process_time()
 
-        molecule.native.basis = basis
+        if ".gbs" in basis:
+            with open(basis, "r") as f:
+                basis_str = f.read()
+            print(f"Loading custom basis from {basis}")
+            molecule.native.basis = gto.basis.parse_nwchem.parse(basis_str)
+        else:
+            molecule.native.basis = basis
         molecule.native.build()
 
         def calculate(second_order: bool, so_max_iterations: int | None = None):
