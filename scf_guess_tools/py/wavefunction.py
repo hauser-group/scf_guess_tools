@@ -75,16 +75,16 @@ class Wavefunction(Base, Object):
             A single matrix for RHF or a tuple of alpha and beta matrices for UHF.
             None for DFT calculations.
         """
-        if self.method == "dft":
-            return None
-            #! use effective KS matrix for DFT
-            # veff = self._native.get_veff(dm=self._D)
-            # hcore = self._native.get_hcore()
-            # if self.molecule.singlet:
-            #     eff_ks_mat = hcore + veff
-            #     return Matrix(eff_ks_mat)
-            # eff_ks_mat = [hcore + veff[0], hcore + veff[1]]
-            # return Matrix(eff_ks_mat[0]), Matrix(eff_ks_mat[1])
+        # if self.method == "dft":
+        #     return None
+        #! use effective KS matrix for DFT
+        # veff = self._native.get_veff(dm=self._D)
+        # hcore = self._native.get_hcore()
+        # if self.molecule.singlet:
+        #     eff_ks_mat = hcore + veff
+        #     return Matrix(eff_ks_mat)
+        # eff_ks_mat = [hcore + veff[0], hcore + veff[1]]
+        # return Matrix(eff_ks_mat[0]), Matrix(eff_ks_mat[1])
 
         F = self._native.get_fock(dm=self._D)
 
