@@ -10,8 +10,9 @@ from numpy.typing import NDArray
 from pyscf.scf import RHF, UHF
 from pyscf.dft import RKS, UKS
 from pyscf.scf.hf import SCF as Native
+from pyscf import gto
 from time import process_time
-import warnings
+import warnings, re
 
 
 class Wavefunction(Base, Object):
@@ -270,7 +271,11 @@ class Wavefunction(Base, Object):
         method = method.lower()
         start = process_time()
 
-        molecule.native.basis = basis
+        if ".dat" in basis or ".gbs" in basis:
+            molecule.native.basis = _basis_dict_from_file(basis)
+            print("Using basis from", basis)
+        else:
+            molecule.native.basis = basis
         molecule.native.build()
 
         def calculate(second_order: bool, so_max_iterations: int | None = None):
@@ -316,6 +321,25 @@ class Wavefunction(Base, Object):
             e_energy=total_energy - molecule.native.energy_nuc(),
             total_energy=total_energy,
         )
+
+
+def _basis_dict_from_file(filepath):
+    """Creates a pyscf compatible dictionary from a NWChem file
+
+    Args:
+        filepath: path to the basis file
+    Return:
+        Dictionary with internal basisset format
+    """
+    with open(filepath, "r") as f:
+        content = f.read()
+    basis_set_matches = [
+        (match.group(1), match.start())
+        for match in re.finditer(r"#BASIS SET:.*\n([A-Z][a-z]?)", content)
+    ]
+    blocks = {key: gto.basis.load(filepath, key) for key, _ in basis_set_matches}
+
+    return blocks
 
 
 def _scf_calculation(
