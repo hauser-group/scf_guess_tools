@@ -87,7 +87,7 @@ class Molecule(Base, Object):
 
     @classmethod
     @timeable
-    def load(cls, path: str, symmetry: bool = True) -> Molecule:
+    def load(cls, path: str, symmetry: bool = True, basis=None) -> Molecule:
         """Load a molecule from an xyz file.
 
         Args:
@@ -111,6 +111,8 @@ class Molecule(Base, Object):
 
         native = Native(charge=q, spin=m - 1, symmetry=symmetry)
         native.fromstring(xyz, format="xyz")
+        if basis is not None:
+            native.basis = basis
         native.build()
 
         return Molecule(name, native)
