@@ -9,6 +9,7 @@ from typing import Any, Callable
 import inspect
 import joblib
 import logging
+import os
 import pickle
 
 
@@ -174,12 +175,19 @@ def cache(
                 result_file = base / f"{key}.result.{bucket}.pkl"
 
                 if not parameters_file.is_file():
-                    with parameters_file.open("wb") as file:
-                        pickle.dump(parameters, file)
-
-                    with result_file.open("wb") as file:
+                    tmp_result_file = result_file.with_suffix(".tmp")
+                    with tmp_result_file.open("wb") as file:
                         pickle.dump(result, file)
+                        file.flush()
 
+                    os.replace(tmp_result_file, result_file)
+                    tmp_parameters_file = parameters_file.with_suffix(".tmp")
+
+                    with tmp_parameters_file.open("wb") as file:
+                        pickle.dump(parameters, file)
+                        file.flush()
+
+                    os.replace(tmp_parameters_file, parameters_file)
                     break
 
                 with parameters_file.open("rb") as file:
