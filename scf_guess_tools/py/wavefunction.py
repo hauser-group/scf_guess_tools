@@ -7,6 +7,7 @@ from .core import Object, guessing_schemes
 from .matrix import Matrix
 from .molecule import Molecule
 from numpy.typing import NDArray
+import numpy as np
 from pyscf.scf import RHF, UHF
 from pyscf.dft import RKS, UKS
 from pyscf.scf.hf import SCF as Native
@@ -344,7 +345,7 @@ def _basis_dict_from_file(filepath):
 
 def _scf_calculation(
     molecule: Molecule,
-    guess: str | Wavefunction | None,
+    guess: str | Wavefunction | NDArray | None,
     basis: str,
     method: str = "hf",
     functional: str | None = None,
@@ -397,6 +398,8 @@ def _scf_calculation(
     if isinstance(guess, str):
         assert guess in guessing_schemes
         solver.run(init_guess=guess)
+    elif isinstance(guess, np.ndarray):
+        solver.kernel(dm0=guess)
     else:
         solver.kernel(dm0=guess._D)
 
